@@ -37,15 +37,20 @@ pip install -r app/requirements.txt
 
 ## 启动
 
-必须在 `app/backend` 目录下启动（模块以脚本目录为 sys.path 根）：
+⚠️ **注意**：Hermes 系统环境变量 `PYTHONPATH` 指向 Python 3.11 包，与项目 venv 的 3.9 冲突，启动时必须清除。
 
 ```bash
 cd app/backend
-source ../.venv/bin/activate
-uvicorn main:app --reload
+PYTHONPATH="" ../.venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
 默认监听 `http://127.0.0.1:8000`；端口被占用时加 `--port 8001`。
+
+验证：
+
+```bash
+curl http://127.0.0.1:8000/api/meta
+```
 
 验证服务可用：
 
