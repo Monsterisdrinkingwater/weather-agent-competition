@@ -1,0 +1,19 @@
+{
+  "id": "chuandiding",
+  "name": "船底顶经典线（罗新线）",
+  "activity": "hiking",
+  "region": "广东韶关",
+  "days": 3,
+  "distance_km": 45.0,
+  "ascent_m": 3200,
+  "difficulty": "高强度",
+  "summary": "华南虐线之王，乱石阵、蚂蟥区、密林窿地形复杂，暴雨说来就来，溪谷线路对降水极其敏感。",
+  "waypoints": [
+    {"id": "c1", "name": "罗坑镇起点", "lat": 24.5760, "lon": 113.2680, "elevation": 320, "kind": "start", "day": 1, "risk": ""},
+    {"id": "c2", "name": "斜辉大草坡营地", "lat": 24.6120, "lon": 113.2350, "elevation": 1350, "kind": "camp", "day": 1, "risk": "草坡无水源，需提前背水；雷雨天禁止扎营山脊"},
+    {"id": "c3", "name": "船底顶主峰", "lat": 24.6480, "lon": 113.2210, "elevation": 1586, "kind": "peak", "day": 2, "risk": "顶部乱石阵，雨雾天路感全失，事故多发段"},
+    {"id": "c4", "name": "石门坑溪谷", "lat": 24.6650, "lon": 113.1980, "elevation": 900, "kind": "water", "day": 2, "risk": "暴雨山洪高危区：上游降水 >20mm 必须绕行高线"},
+    {"id": "c5", "name": "库区营地", "lat": 24.6890, "lon": 113.1750, "elevation": 600, "kind": "camp", "day": 2, "risk": "蚂蟥密集区，雨后尤甚"},
+    {"id": "c6", "name": "新洞村终点", "lat": 24.7230, "lon": 113.1520, "elevation": 380, "kind": "finish", "day": 3, "risk": ""}
+  ]
+}

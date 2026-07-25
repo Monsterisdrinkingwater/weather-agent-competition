@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行山对账 · 户外计划助手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand" onclick="showView('routes')">
+    <svg viewBox="0 0 32 32" class="logo"><path d="M2 26 L11 8 L16 17 L20 10 L30 26 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="24" cy="6" r="2.6" fill="currentColor"/></svg>
+    <div>
+      <h1>行山对账</h1>
+      <p>计划不变，天气在变 · 出发前替你逐点核对</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="sourceBadge" class="badge">…</span>
+    <button class="ghost-btn" onclick="showMyPlans()">我的计划</button>
+  </div>
+</header>
+
+<main>
+
+<!-- 视图 1：线路选择 -->
+<section id="view-routes" class="view">
+  <div class="section-head">
+    <h2>选择线路</h2>
+    <p>预置经典线路已标注关键点位、海拔与风险段 · 也可导入你自己的 GPX 轨迹</p>
+  </div>
+  <div class="filter-row">
+    <button class="chip active" data-act="all" onclick="filterRoutes('all',this)">全部</button>
+    <button class="chip" data-act="hiking" onclick="filterRoutes('hiking',this)">🥾 多日徒步</button>
+    <button class="chip" data-act="trailrun" onclick="filterRoutes('trailrun',this)">🏃 越野跑</button>
+    <label class="chip gpx-chip">⬆ 导入 GPX<input type="file" id="gpxFile" accept=".gpx" hidden onchange="importGpx(this)"></label>
+  </div>
+  <div id="routeGrid" class="route-grid"></div>
+</section>
+
+<!-- 视图 2：创建计划 -->
+<section id="view-plan" class="view hidden">
+  <button class="back-btn" onclick="showView('routes')">← 重选线路</button>
+  <div class="plan-layout">
+    <div id="routeSummary" class="card route-summary"></div>
+    <div class="card plan-form">
+      <h3>创建出行计划</h3>
+      <label class="field-label">出发日期</label>
+      <input type="date" id="departDate" class="input">
+      <label class="field-label">你的装备清单 <span class="hint">随手输入品牌型号即可，AI 自动识别参数</span></label>
+      <textarea id="gearText" class="input" rows="5" placeholder="例：黑冰B700睡袋、自由之魂帐篷、始祖鸟Beta LT、抓绒、登山杖、头灯…"></textarea>
+      <button class="primary-btn" id="parseGearBtn" onclick="parseGear()">🔍 AI 识别装备参数</button>
+      <div id="gearResult" class="gear-result"></div>
+      <button class="primary-btn cta hidden" id="createPlanBtn" onclick="createPlan()">创建计划 · 生成首份天气快照</button>
+    </div>
+  </div>
+</section>
+
+<!-- 视图 3：对账报告 -->
+<section id="view-report" class="view hidden">
+  <button class="back-btn" onclick="showView('routes')">← 返回线路</button>
+  <div class="report-head">
+    <div>
+      <h2 id="reportTitle">对账报告</h2>
+      <p id="reportMeta" class="muted"></p>
+    </div>
+    <div class="report-actions">
+      <button class="ghost-btn" onclick="reconcile('normal')">🔄 重查天气对账</button>
+      <div id="demoScenarios" class="scenario-box hidden">
+        <span class="hint">演示情景注入：</span>
+        <button class="scenario-btn cold" onclick="reconcile('coldwave')">❄️ 模拟寒潮</button>
+        <button class="scenario-btn rain" onclick="reconcile('rainstorm')">🌧 模拟强降水</button>
+      </div>
+    </div>
+  </div>
+  <div id="loading" class="loading hidden"><div class="spinner"></div><span id="loadingText">正在逐点查询沿线天气…</span></div>
+  <div id="reportBody" class="report-grid">
+    <div class="report-col">
+      <div id="alertList"></div>
+      <div class="card"><div id="agentReport" class="agent-report"></div></div>
+    </div>
+    <div class="report-col">
+      <div class="card">
+        <h3 class="card-title">沿线逐点天气矩阵 <span id="snapTime" class="hint"></span></h3>
+        <div id="wxMatrix" class="wx-matrix"></div>
+      </div>
+      <button class="ghost-btn full" onclick="showPush()">📲 预览提醒推送（V2 演示）</button>
+    </div>
+  </div>
+</section>
+
+<!-- 视图 4：模拟推送 -->
+<section id="view-push" class="view hidden">
+  <button class="back-btn" onclick="showView('report')">← 返回报告</button>
+  <div class="push-layout">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-time" id="phoneTime">07:00</div>
+      <div id="pushList" class="push-list"></div>
+    </div>
+    <div class="push-note card">
+      <h3>关于"提醒推送"</h3>
+      <p>当前版本采用<strong>打开即对账</strong>：每次进入计划，系统重查沿线天气并与上次快照对比，变化置顶展示。</p>
+      <p>所有提醒都产自统一的<strong>提醒事件层</strong>（AlertEvent）。左侧手机所示即真实事件数据渲染的推送形态——V2 只需为事件流接入邮件/消息通道，无需改动检测引擎。</p>
+      <p class="muted">产品化路线图：邮件通道 → 微信服务号 → App 推送</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<div id="planDrawer" class="drawer hidden">
+  <div class="drawer-panel">
+    <div class="drawer-head"><h3>我的计划</h3><button class="ghost-btn" onclick="closeDrawer()">✕</button></div>
+    <div id="planList"></div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

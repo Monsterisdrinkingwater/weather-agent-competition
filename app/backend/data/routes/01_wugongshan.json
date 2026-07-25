@@ -1,0 +1,20 @@
+{
+  "id": "wugongshan",
+  "name": "武功山反穿（沈子村—龙山村）",
+  "activity": "hiking",
+  "region": "江西萍乡",
+  "days": 3,
+  "distance_km": 28.5,
+  "ascent_m": 2600,
+  "difficulty": "进阶",
+  "summary": "华东最负盛名的高山草甸线路，山脊暴露感强，风大雾多，昼夜温差大，是新驴进阶重装的第一课。",
+  "waypoints": [
+    {"id": "w1", "name": "沈子村起点", "lat": 27.4213, "lon": 114.2258, "elevation": 620, "kind": "start", "day": 1, "risk": ""},
+    {"id": "w2", "name": "铁蹄峰", "lat": 27.4380, "lon": 114.2065, "elevation": 1580, "kind": "peak", "day": 1, "risk": "绝望坡长陡拔升，注意补水与配速"},
+    {"id": "w3", "name": "发云界营地", "lat": 27.4523, "lon": 114.1889, "elevation": 1628, "kind": "camp", "day": 1, "risk": "草甸营地无遮挡，夜风大，帐钉需打牢"},
+    {"id": "w4", "name": "好汉坡垭口", "lat": 27.4610, "lon": 114.1745, "elevation": 1700, "kind": "pass", "day": 2, "risk": "山脊横切段，大风大雾时易失向"},
+    {"id": "w5", "name": "吊马桩营地", "lat": 27.4655, "lon": 114.1620, "elevation": 1660, "kind": "camp", "day": 2, "risk": "热门营地，周末拥挤；夜间温度常比山下低 8-10°C"},
+    {"id": "w6", "name": "金顶（白鹤峰）", "lat": 27.4664, "lon": 114.1735, "elevation": 1918, "kind": "peak", "day": 3, "risk": "全程最高点，观日出需凌晨出发，防失温"},
+    {"id": "w7", "name": "龙山村终点", "lat": 27.4885, "lon": 114.1462, "elevation": 480, "kind": "finish", "day": 3, "risk": "下撤台阶路湿滑，护膝登山杖"}
+  ]
+}

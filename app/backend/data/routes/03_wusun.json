@@ -1,0 +1,21 @@
+{
+  "id": "wusun",
+  "name": "乌孙古道（琼库什台—夏塔）",
+  "activity": "hiking",
+  "region": "新疆伊犁·天山",
+  "days": 6,
+  "distance_km": 120.0,
+  "ascent_m": 5400,
+  "difficulty": "高强度",
+  "summary": "天山三大经典徒步线之一，翻越 3860m 阿克布拉克达坂，横渡冰河，六天无补给，天气窗口决定成败。",
+  "waypoints": [
+    {"id": "u1", "name": "琼库什台起点", "lat": 43.0930, "lon": 82.3620, "elevation": 1980, "kind": "start", "day": 1, "risk": ""},
+    {"id": "u2", "name": "小吉尔尕朗河谷营地", "lat": 43.0350, "lon": 82.3480, "elevation": 2450, "kind": "camp", "day": 1, "risk": "河谷夜寒，注意帐篷选址避开河风通道"},
+    {"id": "u3", "name": "科克苏河横渡点", "lat": 42.9660, "lon": 82.3170, "elevation": 2200, "kind": "water", "day": 2, "risk": "全线最危险点：午后融雪水位暴涨，必须上午通过；上游降雨立即放弃横渡"},
+    {"id": "u4", "name": "阿克布拉克达坂下营地", "lat": 42.8930, "lon": 82.2760, "elevation": 3000, "kind": "camp", "day": 3, "risk": "海拔 3000m，部分队员开始高反"},
+    {"id": "u5", "name": "阿克布拉克达坂", "lat": 42.8590, "lon": 82.2530, "elevation": 3860, "kind": "pass", "day": 4, "risk": "全程最高点，碎石陡坡，6-8 月仍可能降雪，大风失温高发"},
+    {"id": "u6", "name": "天堂湖营地", "lat": 42.8380, "lon": 82.2400, "elevation": 3350, "kind": "camp", "day": 4, "risk": "高海拔湖畔营地，夜温常至 0°C 以下，风景与风险成正比"},
+    {"id": "u7", "name": "夏塔河谷", "lat": 42.7550, "lon": 82.2900, "elevation": 2600, "kind": "camp", "day": 5, "risk": "牧道岔路多，雾天注意轨迹"},
+    {"id": "u8", "name": "夏塔景区终点", "lat": 42.6690, "lon": 82.2930, "elevation": 2000, "kind": "finish", "day": 6, "risk": ""}
+  ]
+}

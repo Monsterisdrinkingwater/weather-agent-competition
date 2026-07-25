@@ -1,0 +1,21 @@
+{
+  "id": "yubeng",
+  "name": "雨崩全环线（西当进—尼农出）",
+  "activity": "hiking",
+  "region": "云南德钦·梅里雪山",
+  "days": 4,
+  "distance_km": 42.0,
+  "ascent_m": 3100,
+  "difficulty": "进阶",
+  "summary": "梅里雪山腹地经典朝圣线，海拔 2100-3800m，垂直气候带明显，冰湖与神瀑段天气瞬变，高反与失温风险并存。",
+  "waypoints": [
+    {"id": "y1", "name": "西当村起点", "lat": 28.4306, "lon": 98.8482, "elevation": 2640, "kind": "start", "day": 1, "risk": ""},
+    {"id": "y2", "name": "那宗拉垭口", "lat": 28.4232, "lon": 98.8130, "elevation": 3729, "kind": "pass", "day": 1, "risk": "首日直拔 1100m，垭口风大，高反高发段"},
+    {"id": "y3", "name": "雨崩上村营地", "lat": 28.4110, "lon": 98.7920, "elevation": 3150, "kind": "camp", "day": 1, "risk": "夜间辐射降温强，晴夜可比白天低 15°C"},
+    {"id": "y4", "name": "冰湖", "lat": 28.4406, "lon": 98.7645, "elevation": 3800, "kind": "peak", "day": 2, "risk": "冰川侧碛垄碎石坡，降水后落石与湿滑风险陡增"},
+    {"id": "y5", "name": "雨崩下村营地", "lat": 28.4030, "lon": 98.7890, "elevation": 3050, "kind": "camp", "day": 2, "risk": ""},
+    {"id": "y6", "name": "神瀑", "lat": 28.3785, "lon": 98.7760, "elevation": 3657, "kind": "peak", "day": 3, "risk": "午后云雨概率高，宜早出早回"},
+    {"id": "y7", "name": "尼农大峡谷", "lat": 28.4420, "lon": 98.8735, "elevation": 2350, "kind": "pass", "day": 4, "risk": "峡谷栈道悬崖横切，雨天极滑，恐高者慎行"},
+    {"id": "y8", "name": "尼农村终点", "lat": 28.4585, "lon": 98.8890, "elevation": 2100, "kind": "finish", "day": 4, "risk": ""}
+  ]
+}

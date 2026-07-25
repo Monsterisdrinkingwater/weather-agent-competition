@@ -1,0 +1,10 @@
+# 运行时数据存储（JSON store，随服务运行变化）
+app/backend/data/store/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store

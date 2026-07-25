@@ -1,0 +1,19 @@
+{
+  "id": "chongli168",
+  "name": "崇礼 168 越野赛（100km 组近似赛道）",
+  "activity": "trailrun",
+  "region": "河北张家口崇礼",
+  "days": 1,
+  "distance_km": 100.0,
+  "ascent_m": 4600,
+  "difficulty": "高强度",
+  "summary": "华北最具影响力的百公里越野赛，海拔 1200-2100m，山区午后雷雨与夜间低温是历届关门与退赛的主因。",
+  "waypoints": [
+    {"id": "r1", "name": "太舞滑雪小镇起终点", "lat": 40.9120, "lon": 115.2780, "elevation": 1650, "kind": "start", "day": 1, "risk": ""},
+    {"id": "r2", "name": "玉石梁垭口", "lat": 40.9480, "lon": 115.2350, "elevation": 2100, "kind": "pass", "day": 1, "risk": "赛道最高点，暴露山脊，雷雨大风时组委会常在此截留"},
+    {"id": "r3", "name": "CP3 转枝莲补给站", "lat": 40.9850, "lon": 115.1900, "elevation": 1550, "kind": "aid", "day": 1, "risk": "夜段入口，强制装备检查点"},
+    {"id": "r4", "name": "桦皮岭林区", "lat": 41.0210, "lon": 115.2440, "elevation": 1900, "kind": "pass", "day": 1, "risk": "林区夜温可降至 5°C 以下，湿冷失温风险"},
+    {"id": "r5", "name": "CP6 喜鹊梁", "lat": 40.9660, "lon": 115.3100, "elevation": 1800, "kind": "aid", "day": 1, "risk": "凌晨时段最冷点，退赛高发站"},
+    {"id": "r6", "name": "太舞终点", "lat": 40.9120, "lon": 115.2780, "elevation": 1650, "kind": "finish", "day": 1, "risk": ""}
+  ]
+}
