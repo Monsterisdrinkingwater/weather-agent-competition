@@ -10,10 +10,14 @@
   "summary": "江南虐赛代表作，梯田石阶与竹林陡坡交替，春秋赛期常遇降雨，湿滑石板路是崴脚与滑坠重灾区。",
   "waypoints": [
     {"id": "t1", "name": "临海市区起点", "lat": 28.8580, "lon": 121.1450, "elevation": 50, "kind": "start", "day": 1, "risk": ""},
-    {"id": "t2", "name": "兰辽古道爬升段", "lat": 28.8150, "lon": 121.0880, "elevation": 750, "kind": "pass", "day": 1, "risk": "长石阶爬升，雨天青苔石板极滑"},
-    {"id": "t3", "name": "CP2 兰辽村补给站", "lat": 28.7920, "lon": 121.0650, "elevation": 620, "kind": "aid", "day": 1, "risk": ""},
-    {"id": "t4", "name": "括苍山米筛浪", "lat": 28.7740, "lon": 121.0280, "elevation": 1382, "kind": "peak", "day": 1, "risk": "浙东南最高峰，风电场山脊段风大雾浓，体感温度骤降"},
-    {"id": "t5", "name": "CP4 张家渡下撤点", "lat": 28.8090, "lon": 121.0950, "elevation": 180, "kind": "aid", "day": 1, "risk": "长下坡出口，肌肉抽筋高发"},
-    {"id": "t6", "name": "临海终点", "lat": 28.8580, "lon": 121.1450, "elevation": 50, "kind": "finish", "day": 1, "risk": ""}
+    {"id": "t2", "name": "CP1 白水洋镇", "lat": 28.8330, "lon": 121.1120, "elevation": 120, "kind": "aid", "day": 1, "risk": ""},
+    {"id": "t3", "name": "兰辽古道爬升段", "lat": 28.8150, "lon": 121.0880, "elevation": 750, "kind": "pass", "day": 1, "risk": "长石阶爬升，雨天青苔石板极滑"},
+    {"id": "t4", "name": "CP2 兰辽村补给站", "lat": 28.7920, "lon": 121.0650, "elevation": 620, "kind": "aid", "day": 1, "risk": ""},
+    {"id": "t5", "name": "CP3 黄石坦", "lat": 28.7800, "lon": 121.0450, "elevation": 900, "kind": "aid", "day": 1, "risk": "登顶前最后补给，强制雨具检查"},
+    {"id": "t6", "name": "括苍山米筛浪", "lat": 28.7740, "lon": 121.0280, "elevation": 1382, "kind": "peak", "day": 1, "risk": "浙东南最高峰，风电场山脊段风大雾浓，体感温度骤降"},
+    {"id": "t7", "name": "CP4 张家渡下撤点", "lat": 28.8090, "lon": 121.0950, "elevation": 180, "kind": "aid", "day": 1, "risk": "长下坡出口，肌肉抽筋高发"},
+    {"id": "t8", "name": "CP5 兰田村", "lat": 28.8300, "lon": 121.1150, "elevation": 260, "kind": "aid", "day": 1, "risk": ""},
+    {"id": "t9", "name": "CP6 江南街道", "lat": 28.8480, "lon": 121.1350, "elevation": 80, "kind": "aid", "day": 1, "risk": "最后关门点"},
+    {"id": "t10", "name": "临海终点", "lat": 28.8580, "lon": 121.1450, "elevation": 50, "kind": "finish", "day": 1, "risk": ""}
   ]
 }

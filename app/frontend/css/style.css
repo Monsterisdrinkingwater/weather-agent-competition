@@ -119,9 +119,28 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 80px; }
 }
 .wp-item.k-pass::before, .wp-item.k-peak::before { background: var(--accent); }
 .wp-item.k-camp::before { background: #7ea6ff; }
+.wp-item.k-aid::before { background: var(--ok); }
 .wp-item .wp-name { font-weight: 500; }
 .wp-item .wp-meta { color: var(--muted); font-size: 11px; }
 .wp-item .wp-risk { color: var(--warn); font-size: 11px; margin-top: 2px; }
+.cp-badge {
+  font-size: 10px; padding: 1px 7px; border-radius: 999px;
+  background: rgba(62,207,142,.15); color: var(--ok); border: 1px solid rgba(62,207,142,.4);
+}
+
+/* 海拔剖面交互图 */
+.profile-wrap { position: relative; margin-top: 14px; }
+.profile-chart {
+  width: 100%; height: auto; display: block; cursor: crosshair;
+  background: rgba(13,19,33,.5); border: 1px solid var(--line); border-radius: 10px;
+}
+.profile-tip {
+  position: absolute; pointer-events: none; z-index: 5; white-space: nowrap;
+  background: var(--card-hi); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 10px; font-size: 11px; line-height: 1.7;
+  box-shadow: 0 8px 20px rgba(0,0,0,.45);
+}
+.profile-tip b { color: var(--accent); }
 .plan-form h3 { font-family: var(--serif); font-size: 19px; margin-bottom: 14px; }
 .field-label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
 .input {

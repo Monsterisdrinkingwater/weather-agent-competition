@@ -12,6 +12,7 @@ API:
   GET  /api/meta                      运行环境信息（演示/真实数据源等）
 """
 import json
+import logging
 import sys
 import uuid
 from datetime import date, datetime
@@ -19,6 +20,11 @@ from pathlib import Path
 from typing import List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse

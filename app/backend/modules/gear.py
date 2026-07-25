@@ -6,6 +6,7 @@
 3. 内置知识库：无 LLM 时，关键词规则匹配常见装备（confidence=low~high）
 """
 import json
+import logging
 import re
 from typing import List, Optional
 
@@ -13,6 +14,8 @@ import httpx
 
 from config import MODELSCOPE_API_KEY, MODELSCOPE_BASE_URL, LLM_MODEL, TAVILY_API_KEY
 from models import GearItem
+
+logger = logging.getLogger(__name__)
 
 # ── 内置知识库：常见国产/主流户外装备（兜底 + 演示保障）──────────
 _BUILTIN = [
@@ -82,7 +85,8 @@ def _web_search(query: str) -> str:
         resp.raise_for_status()
         results = resp.json().get("results", [])
         return "\n".join(r.get("content", "")[:400] for r in results)
-    except Exception:
+    except Exception as e:
+        logger.warning("Tavily 搜索失败，降级为无搜索上下文: %s: %s", type(e).__name__, str(e)[:200])
         return ""
 
 
@@ -102,7 +106,8 @@ def _llm_chat(system: str, user: str) -> str:
         )
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
-    except Exception:
+    except Exception as e:
+        logger.warning("LLM 调用失败，降级为内置知识库: %s: %s", type(e).__name__, str(e)[:200])
         return ""
 
 

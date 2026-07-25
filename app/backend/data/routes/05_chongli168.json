@@ -10,10 +10,16 @@
   "summary": "华北最具影响力的百公里越野赛，海拔 1200-2100m，山区午后雷雨与夜间低温是历届关门与退赛的主因。",
   "waypoints": [
     {"id": "r1", "name": "太舞滑雪小镇起终点", "lat": 40.9120, "lon": 115.2780, "elevation": 1650, "kind": "start", "day": 1, "risk": ""},
-    {"id": "r2", "name": "玉石梁垭口", "lat": 40.9480, "lon": 115.2350, "elevation": 2100, "kind": "pass", "day": 1, "risk": "赛道最高点，暴露山脊，雷雨大风时组委会常在此截留"},
-    {"id": "r3", "name": "CP3 转枝莲补给站", "lat": 40.9850, "lon": 115.1900, "elevation": 1550, "kind": "aid", "day": 1, "risk": "夜段入口，强制装备检查点"},
-    {"id": "r4", "name": "桦皮岭林区", "lat": 41.0210, "lon": 115.2440, "elevation": 1900, "kind": "pass", "day": 1, "risk": "林区夜温可降至 5°C 以下，湿冷失温风险"},
-    {"id": "r5", "name": "CP6 喜鹊梁", "lat": 40.9660, "lon": 115.3100, "elevation": 1800, "kind": "aid", "day": 1, "risk": "凌晨时段最冷点，退赛高发站"},
-    {"id": "r6", "name": "太舞终点", "lat": 40.9120, "lon": 115.2780, "elevation": 1650, "kind": "finish", "day": 1, "risk": ""}
+    {"id": "r2", "name": "CP1 云顶大酒店", "lat": 40.9430, "lon": 115.2870, "elevation": 1750, "kind": "aid", "day": 1, "risk": ""},
+    {"id": "r3", "name": "玉石梁垭口", "lat": 40.9480, "lon": 115.2350, "elevation": 2100, "kind": "pass", "day": 1, "risk": "赛道最高点，暴露山脊，雷雨大风时组委会常在此截留"},
+    {"id": "r4", "name": "CP2 桦林东", "lat": 40.9650, "lon": 115.2100, "elevation": 1680, "kind": "aid", "day": 1, "risk": "长下坡出口，膝伤退赛高发"},
+    {"id": "r5", "name": "CP3 转枝莲补给站", "lat": 40.9850, "lon": 115.1900, "elevation": 1550, "kind": "aid", "day": 1, "risk": "夜段入口，强制装备检查点"},
+    {"id": "r6", "name": "桦皮岭林区", "lat": 41.0210, "lon": 115.2440, "elevation": 1900, "kind": "pass", "day": 1, "risk": "林区夜温可降至 5°C 以下，湿冷失温风险"},
+    {"id": "r7", "name": "CP4 沽源大南沟", "lat": 41.0350, "lon": 115.2700, "elevation": 1780, "kind": "aid", "day": 1, "risk": ""},
+    {"id": "r8", "name": "CP5 长城岭", "lat": 40.9980, "lon": 115.2950, "elevation": 1950, "kind": "aid", "day": 1, "risk": "山脊风口补给站，停留过久易失温"},
+    {"id": "r9", "name": "CP6 喜鹊梁", "lat": 40.9660, "lon": 115.3100, "elevation": 1800, "kind": "aid", "day": 1, "risk": "凌晨时段最冷点，退赛高发站"},
+    {"id": "r10", "name": "CP7 翠云山", "lat": 40.9400, "lon": 115.3300, "elevation": 1700, "kind": "aid", "day": 1, "risk": ""},
+    {"id": "r11", "name": "CP8 太舞北门", "lat": 40.9250, "lon": 115.2950, "elevation": 1620, "kind": "aid", "day": 1, "risk": "最后关门点"},
+    {"id": "r12", "name": "太舞终点", "lat": 40.9120, "lon": 115.2780, "elevation": 1650, "kind": "finish", "day": 1, "risk": ""}
   ]
 }

@@ -12,6 +12,20 @@
 
 打包时将两者合并为单个 `grill-me` skill：入口文件无独立逻辑，合并后行为与源版本一致，并补充了中文触发词说明。
 
+## 规范归属与同步方向（Canonical Source）
+
+本 skill 在仓库中存在两份 `SKILL.md`，各自角色如下：
+
+- `grill-me/skills/grill-me/SKILL.md` — **规范源（source of truth）**：插件分发源码，`grill-me/` 目录整体是可分发的 Qoder 插件包。
+- `.qoder/skills/grill-me/SKILL.md` — **当前生效副本**：Qoder 在本工作区实际加载并生效的是这一份。
+
+同步方向：**以 `grill-me/skills/grill-me/SKILL.md` 为准，单向同步到 `.qoder/skills/grill-me/`**。修改 skill 内容时先改插件源码这一份，再将其复制覆盖到 `.qoder/skills/grill-me/SKILL.md` 使改动生效；不要直接编辑 `.qoder/` 下的副本，避免两份内容漂移。可用以下命令同步并校验：
+
+```sh
+cp grill-me/skills/grill-me/SKILL.md .qoder/skills/grill-me/SKILL.md
+diff grill-me/skills/grill-me/SKILL.md .qoder/skills/grill-me/SKILL.md  # 无输出即一致
+```
+
 ## 包含内容
 
 - `skills/grill-me/SKILL.md` — 拷问式访谈 skill
