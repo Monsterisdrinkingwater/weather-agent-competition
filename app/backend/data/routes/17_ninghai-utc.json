@@ -1,0 +1,114 @@
+{
+  "id": "ninghai-utc",
+  "name": "宁海越野·UTNH 100km",
+  "activity": "trailrun",
+  "region": "浙江宁波·宁海",
+  "days": 1,
+  "distance_km": 26.2,
+  "ascent_m": 280,
+  "difficulty": "高强度",
+  "summary": "宁海越野·UTNH 100km — 浙江宁波·宁海，全程约26公里，累计爬升约280米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 29.31,
+      "lon": 121.42,
+      "elevation": 100,
+      "kind": "start",
+      "day": 1,
+      "risk": ""
+    },
+    {
+      "id": "w2",
+      "name": "aid",
+      "lat": 29.3,
+      "lon": 121.405,
+      "elevation": 150,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP1 王干山"
+    },
+    {
+      "id": "w3",
+      "name": "垭口",
+      "lat": 29.285,
+      "lon": 121.39,
+      "elevation": 200,
+      "kind": "pass",
+      "day": 1,
+      "risk": "东海云顶爬升"
+    },
+    {
+      "id": "w4",
+      "name": "aid",
+      "lat": 29.27,
+      "lon": 121.375,
+      "elevation": 350,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP2 摩柱峰"
+    },
+    {
+      "id": "w5",
+      "name": "垭口",
+      "lat": 29.255,
+      "lon": 121.36,
+      "elevation": 300,
+      "kind": "pass",
+      "day": 1,
+      "risk": "茶园下降"
+    },
+    {
+      "id": "w6",
+      "name": "aid",
+      "lat": 29.24,
+      "lon": 121.345,
+      "elevation": 250,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP3 龙宫"
+    },
+    {
+      "id": "w7",
+      "name": "垭口",
+      "lat": 29.225,
+      "lon": 121.33,
+      "elevation": 280,
+      "kind": "pass",
+      "day": 1,
+      "risk": "竹林古道"
+    },
+    {
+      "id": "w8",
+      "name": "aid",
+      "lat": 29.29,
+      "lon": 121.38,
+      "elevation": 180,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP4 里辽"
+    },
+    {
+      "id": "w9",
+      "name": "aid",
+      "lat": 29.31,
+      "lon": 121.41,
+      "elevation": 120,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP5 西林"
+    },
+    {
+      "id": "w10",
+      "name": "终点",
+      "lat": 29.31,
+      "lon": 121.42,
+      "elevation": 100,
+      "kind": "finish",
+      "day": 1,
+      "risk": "终点"
+    }
+  ],
+  "source": "preset"
+}

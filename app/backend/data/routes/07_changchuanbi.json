@@ -1,0 +1,94 @@
+{
+  "id": "changchuanbi",
+  "name": "长穿毕（长坪沟—毕棚沟）",
+  "activity": "hiking",
+  "region": "四川阿坝·四姑娘山",
+  "days": 3,
+  "distance_km": 13.8,
+  "ascent_m": 1000,
+  "difficulty": "进阶",
+  "summary": "长穿毕（长坪沟—毕棚沟） — 四川阿坝·四姑娘山，全程约14公里，累计爬升约1000米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 31.09,
+      "lon": 102.87,
+      "elevation": 3200,
+      "kind": "start",
+      "day": 1,
+      "risk": "长坪沟入口"
+    },
+    {
+      "id": "w2",
+      "name": "营地",
+      "lat": 31.1,
+      "lon": 102.855,
+      "elevation": 3400,
+      "kind": "camp",
+      "day": 1,
+      "risk": "枯树滩营地"
+    },
+    {
+      "id": "w3",
+      "name": "垭口",
+      "lat": 31.115,
+      "lon": 102.84,
+      "elevation": 3600,
+      "kind": "pass",
+      "day": 1,
+      "risk": "木骡子，开阔草甸"
+    },
+    {
+      "id": "w4",
+      "name": "营地",
+      "lat": 31.13,
+      "lon": 102.825,
+      "elevation": 3800,
+      "kind": "camp",
+      "day": 2,
+      "risk": "叉子沟尾营地"
+    },
+    {
+      "id": "w5",
+      "name": "垭口",
+      "lat": 31.142,
+      "lon": 102.812,
+      "elevation": 4200,
+      "kind": "pass",
+      "day": 2,
+      "risk": "垭口（全程最高），凌晨翻越"
+    },
+    {
+      "id": "w6",
+      "name": "垭口",
+      "lat": 31.155,
+      "lon": 102.8,
+      "elevation": 3900,
+      "kind": "pass",
+      "day": 2,
+      "risk": "下降段，碎石坡"
+    },
+    {
+      "id": "w7",
+      "name": "水源",
+      "lat": 31.168,
+      "lon": 102.785,
+      "elevation": 3600,
+      "kind": "water",
+      "day": 3,
+      "risk": "毕棚沟源头"
+    },
+    {
+      "id": "w8",
+      "name": "终点",
+      "lat": 31.18,
+      "lon": 102.77,
+      "elevation": 3400,
+      "kind": "finish",
+      "day": 3,
+      "risk": "毕棚沟上海子"
+    }
+  ],
+  "source": "preset"
+}

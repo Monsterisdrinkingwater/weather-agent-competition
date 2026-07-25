@@ -1,0 +1,94 @@
+{
+  "id": "beijing-trailrun",
+  "name": "北京TNF100赛道（50km简化）",
+  "activity": "trailrun",
+  "region": "北京·海淀",
+  "days": 1,
+  "distance_km": 13.8,
+  "ascent_m": 450,
+  "difficulty": "进阶",
+  "summary": "北京TNF100赛道（50km简化） — 北京·海淀，全程约14公里，累计爬升约450米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 40.08,
+      "lon": 116.18,
+      "elevation": 100,
+      "kind": "start",
+      "day": 1,
+      "risk": "狂飙乐园"
+    },
+    {
+      "id": "w2",
+      "name": "aid",
+      "lat": 40.075,
+      "lon": 116.195,
+      "elevation": 200,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP1 温泉"
+    },
+    {
+      "id": "w3",
+      "name": "垭口",
+      "lat": 40.07,
+      "lon": 116.21,
+      "elevation": 350,
+      "kind": "pass",
+      "day": 1,
+      "risk": "萝卜地垭口"
+    },
+    {
+      "id": "w4",
+      "name": "山顶",
+      "lat": 40.06,
+      "lon": 116.225,
+      "elevation": 550,
+      "kind": "peak",
+      "day": 1,
+      "risk": "阳台山（最高点）"
+    },
+    {
+      "id": "w5",
+      "name": "aid",
+      "lat": 40.05,
+      "lon": 116.24,
+      "elevation": 400,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP2 凤凰岭"
+    },
+    {
+      "id": "w6",
+      "name": "垭口",
+      "lat": 40.04,
+      "lon": 116.22,
+      "elevation": 300,
+      "kind": "pass",
+      "day": 1,
+      "risk": "车耳营"
+    },
+    {
+      "id": "w7",
+      "name": "aid",
+      "lat": 40.06,
+      "lon": 116.2,
+      "elevation": 200,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP3 大觉寺"
+    },
+    {
+      "id": "w8",
+      "name": "终点",
+      "lat": 40.08,
+      "lon": 116.18,
+      "elevation": 100,
+      "kind": "finish",
+      "day": 1,
+      "risk": "终点"
+    }
+  ],
+  "source": "preset"
+}

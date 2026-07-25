@@ -1,0 +1,114 @@
+{
+  "id": "taibai-south",
+  "name": "太白山南南穿越",
+  "activity": "hiking",
+  "region": "陕西宝鸡·秦岭",
+  "days": 3,
+  "distance_km": 22.4,
+  "ascent_m": 2570,
+  "difficulty": "进阶",
+  "summary": "太白山南南穿越 — 陕西宝鸡·秦岭，全程约22公里，累计爬升约2567米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 33.95,
+      "lon": 107.72,
+      "elevation": 1200,
+      "kind": "start",
+      "day": 1,
+      "risk": "厚畛子"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 33.965,
+      "lon": 107.74,
+      "elevation": 1600,
+      "kind": "pass",
+      "day": 1,
+      "risk": "龙洞沟"
+    },
+    {
+      "id": "w3",
+      "name": "营地",
+      "lat": 33.98,
+      "lon": 107.76,
+      "elevation": 2200,
+      "kind": "camp",
+      "day": 1,
+      "risk": "凉水井"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 34.0,
+      "lon": 107.77,
+      "elevation": 2800,
+      "kind": "pass",
+      "day": 2,
+      "risk": "老庙子"
+    },
+    {
+      "id": "w5",
+      "name": "垭口",
+      "lat": 34.015,
+      "lon": 107.765,
+      "elevation": 3300,
+      "kind": "pass",
+      "day": 2,
+      "risk": "将军庙"
+    },
+    {
+      "id": "w6",
+      "name": "山顶",
+      "lat": 34.03,
+      "lon": 107.755,
+      "elevation": 3600,
+      "kind": "peak",
+      "day": 2,
+      "risk": "跑马梁"
+    },
+    {
+      "id": "w7",
+      "name": "山顶",
+      "lat": 34.04,
+      "lon": 107.745,
+      "elevation": 3767,
+      "kind": "peak",
+      "day": 2,
+      "risk": "拔仙台（秦岭最高峰）"
+    },
+    {
+      "id": "w8",
+      "name": "垭口",
+      "lat": 34.025,
+      "lon": 107.73,
+      "elevation": 3400,
+      "kind": "pass",
+      "day": 3,
+      "risk": "大石河"
+    },
+    {
+      "id": "w9",
+      "name": "营地",
+      "lat": 33.995,
+      "lon": 107.715,
+      "elevation": 2600,
+      "kind": "camp",
+      "day": 3,
+      "risk": "南天门"
+    },
+    {
+      "id": "w10",
+      "name": "终点",
+      "lat": 33.96,
+      "lon": 107.7,
+      "elevation": 1400,
+      "kind": "finish",
+      "day": 3,
+      "risk": "铁甲树"
+    }
+  ],
+  "source": "preset"
+}

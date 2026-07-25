@@ -1,0 +1,144 @@
+{
+  "id": "huangshan-hike",
+  "name": "黄山全程徒步",
+  "activity": "hiking",
+  "region": "安徽黄山",
+  "days": 2,
+  "distance_km": 13.0,
+  "ascent_m": 1260,
+  "difficulty": "进阶",
+  "summary": "黄山全程徒步 — 安徽黄山，全程约13公里，累计爬升约1260米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 30.12,
+      "lon": 118.165,
+      "elevation": 600,
+      "kind": "start",
+      "day": 1,
+      "risk": "慈光阁"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 30.115,
+      "lon": 118.155,
+      "elevation": 900,
+      "kind": "pass",
+      "day": 1,
+      "risk": "立马桥"
+    },
+    {
+      "id": "w3",
+      "name": "垭口",
+      "lat": 30.11,
+      "lon": 118.145,
+      "elevation": 1300,
+      "kind": "pass",
+      "day": 1,
+      "risk": "半山寺"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 30.105,
+      "lon": 118.14,
+      "elevation": 1600,
+      "kind": "pass",
+      "day": 1,
+      "risk": "天门坎"
+    },
+    {
+      "id": "w5",
+      "name": "山顶",
+      "lat": 30.1,
+      "lon": 118.135,
+      "elevation": 1860,
+      "kind": "peak",
+      "day": 1,
+      "risk": "玉屏楼（迎客松）"
+    },
+    {
+      "id": "w6",
+      "name": "垭口",
+      "lat": 30.11,
+      "lon": 118.14,
+      "elevation": 1840,
+      "kind": "pass",
+      "day": 1,
+      "risk": "鳌鱼峰"
+    },
+    {
+      "id": "w7",
+      "name": "山顶",
+      "lat": 30.12,
+      "lon": 118.145,
+      "elevation": 1830,
+      "kind": "peak",
+      "day": 1,
+      "risk": "光明顶（看日出）"
+    },
+    {
+      "id": "w8",
+      "name": "山顶",
+      "lat": 30.13,
+      "lon": 118.15,
+      "elevation": 1780,
+      "kind": "peak",
+      "day": 2,
+      "risk": "飞来石"
+    },
+    {
+      "id": "w9",
+      "name": "山顶",
+      "lat": 30.14,
+      "lon": 118.155,
+      "elevation": 1700,
+      "kind": "peak",
+      "day": 2,
+      "risk": "排云亭"
+    },
+    {
+      "id": "w10",
+      "name": "垭口",
+      "lat": 30.145,
+      "lon": 118.16,
+      "elevation": 1600,
+      "kind": "pass",
+      "day": 2,
+      "risk": "西海大峡谷入口"
+    },
+    {
+      "id": "w11",
+      "name": "垭口",
+      "lat": 30.14,
+      "lon": 118.175,
+      "elevation": 1400,
+      "kind": "pass",
+      "day": 2,
+      "risk": "北海景区"
+    },
+    {
+      "id": "w12",
+      "name": "垭口",
+      "lat": 30.135,
+      "lon": 118.185,
+      "elevation": 1200,
+      "kind": "pass",
+      "day": 2,
+      "risk": "白鹅岭"
+    },
+    {
+      "id": "w13",
+      "name": "终点",
+      "lat": 30.13,
+      "lon": 118.195,
+      "elevation": 800,
+      "kind": "finish",
+      "day": 2,
+      "risk": "云谷寺"
+    }
+  ],
+  "source": "preset"
+}

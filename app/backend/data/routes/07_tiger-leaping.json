@@ -1,0 +1,84 @@
+{
+  "id": "tiger-leaping",
+  "name": "虎跳峡高路徒步",
+  "activity": "hiking",
+  "region": "云南丽江·玉龙雪山",
+  "days": 2,
+  "distance_km": 6.6,
+  "ascent_m": 850,
+  "difficulty": "进阶",
+  "summary": "虎跳峡高路徒步 — 云南丽江·玉龙雪山，全程约7公里，累计爬升约850米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 27.25,
+      "lon": 100.05,
+      "elevation": 1850,
+      "kind": "start",
+      "day": 1,
+      "risk": ""
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 27.255,
+      "lon": 100.042,
+      "elevation": 2100,
+      "kind": "pass",
+      "day": 1,
+      "risk": "二十八道拐，持续爬升"
+    },
+    {
+      "id": "w3",
+      "name": "营地",
+      "lat": 27.262,
+      "lon": 100.035,
+      "elevation": 2450,
+      "kind": "camp",
+      "day": 1,
+      "risk": "茶马客栈，补水住宿"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 27.27,
+      "lon": 100.028,
+      "elevation": 2600,
+      "kind": "pass",
+      "day": 1,
+      "risk": "高路崖壁段，注意落石"
+    },
+    {
+      "id": "w5",
+      "name": "山顶",
+      "lat": 27.278,
+      "lon": 100.02,
+      "elevation": 2700,
+      "kind": "peak",
+      "day": 2,
+      "risk": "halfway中途客栈"
+    },
+    {
+      "id": "w6",
+      "name": "垭口",
+      "lat": 27.285,
+      "lon": 100.015,
+      "elevation": 2550,
+      "kind": "pass",
+      "day": 2,
+      "risk": "瀑布段，路面湿滑"
+    },
+    {
+      "id": "w7",
+      "name": "终点",
+      "lat": 27.295,
+      "lon": 100.008,
+      "elevation": 2200,
+      "kind": "finish",
+      "day": 2,
+      "risk": "中虎跳，可下江边"
+    }
+  ],
+  "source": "preset"
+}

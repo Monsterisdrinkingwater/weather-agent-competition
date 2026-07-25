@@ -1,0 +1,104 @@
+{
+  "id": "monutai-trailrun",
+  "name": "莫干山越野跑",
+  "activity": "trailrun",
+  "region": "浙江湖州·德清",
+  "days": 1,
+  "distance_km": 13.7,
+  "ascent_m": 450,
+  "difficulty": "入门",
+  "summary": "莫干山越野跑 — 浙江湖州·德清，全程约14公里，累计爬升约450米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 30.6,
+      "lon": 119.85,
+      "elevation": 100,
+      "kind": "start",
+      "day": 1,
+      "risk": "庾村"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 30.59,
+      "lon": 119.84,
+      "elevation": 200,
+      "kind": "pass",
+      "day": 1,
+      "risk": "蒋公道"
+    },
+    {
+      "id": "w3",
+      "name": "aid",
+      "lat": 30.58,
+      "lon": 119.83,
+      "elevation": 350,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP1 剑池"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 30.57,
+      "lon": 119.82,
+      "elevation": 500,
+      "kind": "pass",
+      "day": 1,
+      "risk": "芦花荡"
+    },
+    {
+      "id": "w5",
+      "name": "山顶",
+      "lat": 30.56,
+      "lon": 119.81,
+      "elevation": 550,
+      "kind": "peak",
+      "day": 1,
+      "risk": "塔山（最高点）"
+    },
+    {
+      "id": "w6",
+      "name": "aid",
+      "lat": 30.555,
+      "lon": 119.825,
+      "elevation": 450,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP2 大坑"
+    },
+    {
+      "id": "w7",
+      "name": "垭口",
+      "lat": 30.565,
+      "lon": 119.84,
+      "elevation": 350,
+      "kind": "pass",
+      "day": 1,
+      "risk": "荫山街"
+    },
+    {
+      "id": "w8",
+      "name": "aid",
+      "lat": 30.58,
+      "lon": 119.855,
+      "elevation": 200,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP3 瑶坞"
+    },
+    {
+      "id": "w9",
+      "name": "终点",
+      "lat": 30.6,
+      "lon": 119.85,
+      "elevation": 100,
+      "kind": "finish",
+      "day": 1,
+      "risk": "终点"
+    }
+  ],
+  "source": "preset"
+}

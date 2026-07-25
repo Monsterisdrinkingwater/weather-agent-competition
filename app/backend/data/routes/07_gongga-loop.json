@@ -1,0 +1,124 @@
+{
+  "id": "gongga-loop",
+  "name": "贡嘎大环线（老榆林—草科）",
+  "activity": "hiking",
+  "region": "四川甘孜·贡嘎山",
+  "days": 6,
+  "distance_km": 59.3,
+  "ascent_m": 1100,
+  "difficulty": "进阶",
+  "summary": "贡嘎大环线（老榆林—草科） — 四川甘孜·贡嘎山，全程约59公里，累计爬升约1100米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 29.85,
+      "lon": 101.9,
+      "elevation": 3200,
+      "kind": "start",
+      "day": 1,
+      "risk": "老榆林"
+    },
+    {
+      "id": "w2",
+      "name": "营地",
+      "lat": 29.82,
+      "lon": 101.85,
+      "elevation": 3500,
+      "kind": "camp",
+      "day": 1,
+      "risk": "格西草原"
+    },
+    {
+      "id": "w3",
+      "name": "营地",
+      "lat": 29.78,
+      "lon": 101.8,
+      "elevation": 3900,
+      "kind": "camp",
+      "day": 2,
+      "risk": "上日乌且"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 29.75,
+      "lon": 101.78,
+      "elevation": 4300,
+      "kind": "pass",
+      "day": 2,
+      "risk": "日乌且垭口，全程最高"
+    },
+    {
+      "id": "w5",
+      "name": "营地",
+      "lat": 29.72,
+      "lon": 101.76,
+      "elevation": 4000,
+      "kind": "camp",
+      "day": 3,
+      "risk": "莫溪沟尾"
+    },
+    {
+      "id": "w6",
+      "name": "营地",
+      "lat": 29.68,
+      "lon": 101.72,
+      "elevation": 3700,
+      "kind": "camp",
+      "day": 3,
+      "risk": "冬季牧场"
+    },
+    {
+      "id": "w7",
+      "name": "营地",
+      "lat": 29.64,
+      "lon": 101.68,
+      "elevation": 3500,
+      "kind": "camp",
+      "day": 4,
+      "risk": "贡嘎寺"
+    },
+    {
+      "id": "w8",
+      "name": "垭口",
+      "lat": 29.6,
+      "lon": 101.65,
+      "elevation": 3300,
+      "kind": "pass",
+      "day": 4,
+      "risk": "子梅垭口（贡嘎最佳观景点）"
+    },
+    {
+      "id": "w9",
+      "name": "营地",
+      "lat": 29.55,
+      "lon": 101.7,
+      "elevation": 3100,
+      "kind": "camp",
+      "day": 5,
+      "risk": "巴望海"
+    },
+    {
+      "id": "w10",
+      "name": "营地",
+      "lat": 29.5,
+      "lon": 101.75,
+      "elevation": 2900,
+      "kind": "camp",
+      "day": 5,
+      "risk": "烂碉楼"
+    },
+    {
+      "id": "w11",
+      "name": "终点",
+      "lat": 29.45,
+      "lon": 101.8,
+      "elevation": 2500,
+      "kind": "finish",
+      "day": 6,
+      "risk": "草科乡，泡温泉"
+    }
+  ],
+  "source": "preset"
+}

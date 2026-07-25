@@ -1,0 +1,114 @@
+{
+  "id": "chengdu-trailrun",
+  "name": "成都越野·龙泉山",
+  "activity": "trailrun",
+  "region": "四川成都·龙泉驿",
+  "days": 1,
+  "distance_km": 19.3,
+  "ascent_m": 200,
+  "difficulty": "入门",
+  "summary": "成都越野·龙泉山 — 四川成都·龙泉驿，全程约19公里，累计爬升约200米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 30.55,
+      "lon": 104.25,
+      "elevation": 500,
+      "kind": "start",
+      "day": 1,
+      "risk": "龙泉驿"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 30.54,
+      "lon": 104.24,
+      "elevation": 550,
+      "kind": "pass",
+      "day": 1,
+      "risk": "仰天窝"
+    },
+    {
+      "id": "w3",
+      "name": "aid",
+      "lat": 30.525,
+      "lon": 104.225,
+      "elevation": 600,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP1 山泉镇"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 30.51,
+      "lon": 104.21,
+      "elevation": 650,
+      "kind": "pass",
+      "day": 1,
+      "risk": "长松寺"
+    },
+    {
+      "id": "w5",
+      "name": "山顶",
+      "lat": 30.495,
+      "lon": 104.195,
+      "elevation": 700,
+      "kind": "peak",
+      "day": 1,
+      "risk": "石经寺后山"
+    },
+    {
+      "id": "w6",
+      "name": "aid",
+      "lat": 30.485,
+      "lon": 104.185,
+      "elevation": 650,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP2 茶店镇"
+    },
+    {
+      "id": "w7",
+      "name": "垭口",
+      "lat": 30.5,
+      "lon": 104.2,
+      "elevation": 600,
+      "kind": "pass",
+      "day": 1,
+      "risk": "桃花故里"
+    },
+    {
+      "id": "w8",
+      "name": "aid",
+      "lat": 30.52,
+      "lon": 104.215,
+      "elevation": 550,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP3 书房村"
+    },
+    {
+      "id": "w9",
+      "name": "垭口",
+      "lat": 30.54,
+      "lon": 104.23,
+      "elevation": 520,
+      "kind": "pass",
+      "day": 1,
+      "risk": "建设路"
+    },
+    {
+      "id": "w10",
+      "name": "终点",
+      "lat": 30.55,
+      "lon": 104.25,
+      "elevation": 500,
+      "kind": "finish",
+      "day": 1,
+      "risk": "终点"
+    }
+  ],
+  "source": "preset"
+}

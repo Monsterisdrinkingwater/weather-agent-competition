@@ -1,0 +1,114 @@
+{
+  "id": "yading-loop",
+  "name": "稻城亚丁大转山",
+  "activity": "hiking",
+  "region": "四川甘孜·稻城",
+  "days": 4,
+  "distance_km": 23.9,
+  "ascent_m": 900,
+  "difficulty": "进阶",
+  "summary": "稻城亚丁大转山 — 四川甘孜·稻城，全程约24公里，累计爬升约900米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 28.42,
+      "lon": 100.28,
+      "elevation": 3900,
+      "kind": "start",
+      "day": 1,
+      "risk": "冲古寺"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 28.43,
+      "lon": 100.265,
+      "elevation": 4100,
+      "kind": "pass",
+      "day": 1,
+      "risk": "洛绒牛场"
+    },
+    {
+      "id": "w3",
+      "name": "营地",
+      "lat": 28.445,
+      "lon": 100.25,
+      "elevation": 4300,
+      "kind": "camp",
+      "day": 1,
+      "risk": "贡嘎措"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 28.46,
+      "lon": 100.235,
+      "elevation": 4600,
+      "kind": "pass",
+      "day": 2,
+      "risk": "蛇湖垭口"
+    },
+    {
+      "id": "w5",
+      "name": "营地",
+      "lat": 28.47,
+      "lon": 100.22,
+      "elevation": 4500,
+      "kind": "camp",
+      "day": 2,
+      "risk": "蛇湖营地"
+    },
+    {
+      "id": "w6",
+      "name": "垭口",
+      "lat": 28.48,
+      "lon": 100.205,
+      "elevation": 4700,
+      "kind": "pass",
+      "day": 2,
+      "risk": "松多垭口"
+    },
+    {
+      "id": "w7",
+      "name": "营地",
+      "lat": 28.49,
+      "lon": 100.19,
+      "elevation": 4400,
+      "kind": "camp",
+      "day": 3,
+      "risk": "卡斯牛棚"
+    },
+    {
+      "id": "w8",
+      "name": "垭口",
+      "lat": 28.5,
+      "lon": 100.21,
+      "elevation": 4300,
+      "kind": "pass",
+      "day": 3,
+      "risk": "地狱谷上段"
+    },
+    {
+      "id": "w9",
+      "name": "营地",
+      "lat": 28.48,
+      "lon": 100.25,
+      "elevation": 4000,
+      "kind": "camp",
+      "day": 3,
+      "risk": "卡斯村"
+    },
+    {
+      "id": "w10",
+      "name": "终点",
+      "lat": 28.44,
+      "lon": 100.28,
+      "elevation": 3900,
+      "kind": "finish",
+      "day": 4,
+      "risk": "返回冲古寺"
+    }
+  ],
+  "source": "preset"
+}

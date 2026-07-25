@@ -1,0 +1,114 @@
+{
+  "id": "fanjing-hike",
+  "name": "梵净山徒步（东门—红云金顶）",
+  "activity": "hiking",
+  "region": "贵州铜仁·梵净山",
+  "days": 2,
+  "distance_km": 9.7,
+  "ascent_m": 1640,
+  "difficulty": "进阶",
+  "summary": "梵净山徒步（东门—红云金顶） — 贵州铜仁·梵净山，全程约10公里，累计爬升约1636米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 27.92,
+      "lon": 108.72,
+      "elevation": 700,
+      "kind": "start",
+      "day": 1,
+      "risk": "东门（江口）"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 27.912,
+      "lon": 108.71,
+      "elevation": 900,
+      "kind": "pass",
+      "day": 1,
+      "risk": "黑湾河"
+    },
+    {
+      "id": "w3",
+      "name": "垭口",
+      "lat": 27.905,
+      "lon": 108.7,
+      "elevation": 1200,
+      "kind": "pass",
+      "day": 1,
+      "risk": "鱼坳"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 27.898,
+      "lon": 108.69,
+      "elevation": 1600,
+      "kind": "pass",
+      "day": 1,
+      "risk": "回香坪"
+    },
+    {
+      "id": "w5",
+      "name": "垭口",
+      "lat": 27.89,
+      "lon": 108.685,
+      "elevation": 2000,
+      "kind": "pass",
+      "day": 1,
+      "risk": "万宝岩"
+    },
+    {
+      "id": "w6",
+      "name": "山顶",
+      "lat": 27.885,
+      "lon": 108.68,
+      "elevation": 2200,
+      "kind": "peak",
+      "day": 1,
+      "risk": "蘑菇石"
+    },
+    {
+      "id": "w7",
+      "name": "山顶",
+      "lat": 27.882,
+      "lon": 108.678,
+      "elevation": 2336,
+      "kind": "peak",
+      "day": 1,
+      "risk": "红云金顶"
+    },
+    {
+      "id": "w8",
+      "name": "营地",
+      "lat": 27.888,
+      "lon": 108.682,
+      "elevation": 2100,
+      "kind": "camp",
+      "day": 1,
+      "risk": "山上客栈"
+    },
+    {
+      "id": "w9",
+      "name": "垭口",
+      "lat": 27.895,
+      "lon": 108.692,
+      "elevation": 1600,
+      "kind": "pass",
+      "day": 2,
+      "risk": "下山（西线索道/步行）"
+    },
+    {
+      "id": "w10",
+      "name": "终点",
+      "lat": 27.905,
+      "lon": 108.705,
+      "elevation": 1000,
+      "kind": "finish",
+      "day": 2,
+      "risk": "西口（印江）"
+    }
+  ],
+  "source": "preset"
+}

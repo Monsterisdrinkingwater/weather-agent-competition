@@ -1,0 +1,124 @@
+{
+  "id": "hangzhou-trailrun",
+  "name": "杭州越野·标毅线",
+  "activity": "trailrun",
+  "region": "浙江杭州·西湖",
+  "days": 1,
+  "distance_km": 12.6,
+  "ascent_m": 190,
+  "difficulty": "进阶",
+  "summary": "杭州越野·标毅线 — 浙江杭州·西湖，全程约13公里，累计爬升约190米",
+  "waypoints": [
+    {
+      "id": "w1",
+      "name": "起点",
+      "lat": 30.25,
+      "lon": 120.12,
+      "elevation": 50,
+      "kind": "start",
+      "day": 1,
+      "risk": "浙大玉泉"
+    },
+    {
+      "id": "w2",
+      "name": "垭口",
+      "lat": 30.245,
+      "lon": 120.11,
+      "elevation": 80,
+      "kind": "pass",
+      "day": 1,
+      "risk": "灵峰山"
+    },
+    {
+      "id": "w3",
+      "name": "aid",
+      "lat": 30.24,
+      "lon": 120.1,
+      "elevation": 150,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP1 北高峰"
+    },
+    {
+      "id": "w4",
+      "name": "垭口",
+      "lat": 30.235,
+      "lon": 120.09,
+      "elevation": 200,
+      "kind": "pass",
+      "day": 1,
+      "risk": "美人峰"
+    },
+    {
+      "id": "w5",
+      "name": "aid",
+      "lat": 30.225,
+      "lon": 120.08,
+      "elevation": 180,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP2 石人岭"
+    },
+    {
+      "id": "w6",
+      "name": "垭口",
+      "lat": 30.215,
+      "lon": 120.07,
+      "elevation": 220,
+      "kind": "pass",
+      "day": 1,
+      "risk": "天门山"
+    },
+    {
+      "id": "w7",
+      "name": "aid",
+      "lat": 30.205,
+      "lon": 120.075,
+      "elevation": 200,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP3 十里琅珰"
+    },
+    {
+      "id": "w8",
+      "name": "垭口",
+      "lat": 30.195,
+      "lon": 120.085,
+      "elevation": 180,
+      "kind": "pass",
+      "day": 1,
+      "risk": "五云山"
+    },
+    {
+      "id": "w9",
+      "name": "aid",
+      "lat": 30.185,
+      "lon": 120.095,
+      "elevation": 120,
+      "kind": "aid",
+      "day": 1,
+      "risk": "CP4 林海亭"
+    },
+    {
+      "id": "w10",
+      "name": "垭口",
+      "lat": 30.18,
+      "lon": 120.105,
+      "elevation": 80,
+      "kind": "pass",
+      "day": 1,
+      "risk": "贵人阁"
+    },
+    {
+      "id": "w11",
+      "name": "终点",
+      "lat": 30.175,
+      "lon": 120.115,
+      "elevation": 50,
+      "kind": "finish",
+      "day": 1,
+      "risk": "虎跑"
+    }
+  ],
+  "source": "preset"
+}
