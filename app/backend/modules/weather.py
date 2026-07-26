@@ -90,23 +90,35 @@ class DemoSource:
 
 class TianjiSource:
     """天机 API 单点查询封装。
-    接口路径与参数以官方开发文档为准（json 接口，APIKey 认证），
-    此处按'坐标点 + 要素 + 时段'的通用形态实现，联调时只需改 _request。
+    接口文档：https://www.tjweather.com/info/doc/download/api/weather/json.html
+    路径 /beta，参数 key/loc/fields/t_res/fcst_days/fcst_hours/grid/tz。
     """
 
     name = "tjweather"
 
-    def __init__(self):
-        self.client = httpx.Client(base_url=TJ_API_BASE, timeout=15)
+    # 查询的要素（免费版 6 个地面要素）
+    _FIELDS = "t2m,ws10m,wd10m,slp,rh2m,tp"
 
-    def _request(self, lat: float, lon: float, start: str, end: str) -> dict:
+    def __init__(self):
+        self.client = httpx.Client(base_url=TJ_API_BASE.rstrip("/"), timeout=15)
+
+    def _request(self, lat: float, lon: float, fcst_days: int = 0,
+                 fcst_hours: int = 0) -> dict:
+        """查询单点预报。
+        t_res=15min 提供最高时间精度，diff 引擎按天聚合不受影响，
+        Chat Agent 可用 15min 数据回答"具体几点下雨"类问题。
+        """
         resp = self.client.get(
-            "/api/v1/point",
+            "/beta",
             params={
                 "key": TJ_API_KEY,
-                "lat": lat, "lon": lon,
-                "elements": "t2m,ws10m,wd10m,slp,rh2m,tp",
-                "start": start, "end": end,
+                "loc": f"{lon},{lat}",           # 经度在前，纬度在后
+                "fields": self._FIELDS,
+                "fcst_days": str(fcst_days),
+                "fcst_hours": str(fcst_hours),
+                "t_res": "15min",                 # 最高时间精度
+                "tz": "8",                        # 北京时间
+                "grid": "1",                      # 最高空间精度(2.5km)
             },
         )
         resp.raise_for_status()
@@ -135,8 +147,9 @@ class TianjiSource:
     def fetch(self, route: Route, depart: date, scenario: str = "normal") -> List[DayPointWeather]:
         cells = []
         for wp in route.waypoints:
-            d = (depart + timedelta(days=wp.day - 1)).isoformat()
-            data = self._request(wp.lat, wp.lon, d, d)
+            day_offset = wp.day - 1
+            d = (depart + timedelta(days=day_offset)).isoformat()
+            data = self._request(wp.lat, wp.lon, fcst_days=0, fcst_hours=0)
             hourly = data.get("data", data.get("hourly", []))
             if hourly:
                 cells.append(self._aggregate_day(hourly, wp.id, d))
