@@ -68,7 +68,8 @@ curl http://127.0.0.1:8000/api/meta
 
 | 环境变量 | 作用 | 缺失时行为 |
 |---|---|---|
-| `TJ_API_KEY` | 天机天气 API 密钥 | 使用确定性模拟天气（`weather_source: demo`），支持 `coldwave` / `rainstorm` 场景模拟突变 |
+| `TJ_API_KEY` | 天机天气 API 密钥（新版 /v2） | 与 `TJ_SUBSCRIPTION_ID` 缺一即用确定性模拟天气（`weather_source: demo`），支持 `coldwave` / `rainstorm` 场景模拟突变 |
+| `TJ_SUBSCRIPTION_ID` | 天机新版 API 订阅 ID（v2 必需） | 同上，降级演示模式 |
 | `TJ_API_BASE` | 天气 API 地址 | 默认 `https://api.tjweather.com` |
 | `MODELSCOPE_API_KEY` | 魔搭 LLM（OpenAI 兼容） | 报告用规则模板生成，不调用 LLM |
 | `MODELSCOPE_BASE_URL` / `LLM_MODEL` | LLM 地址 / 模型 | 有默认值 |

@@ -2,7 +2,7 @@
 API:
   GET  /api/routes                    线路库
   GET  /api/routes/{id}               线路详情
-  POST /api/routes/gpx                GPX 导入
+  POST /api/routes/gpx                轨迹导入（GPX / KML / KMZ）
   POST /api/gear/parse                装备清单解析
   POST /api/plans                     创建计划（自动打首份天气快照）
   GET  /api/plans                     计划列表
@@ -33,13 +33,16 @@ from pydantic import BaseModel
 
 import storage
 from config import ROUTES_DIR, WEATHER_DEMO_MODE, MODELSCOPE_API_KEY, TAVILY_API_KEY
-from models import Conversation, Plan, Route, WeatherSnapshot
+from models import Conversation, GearItem, Plan, Route, WeatherSnapshot
+from modules import gear_db
 from modules import gpx as gpx_mod
+from modules.advisor import build_gear_advice
 from modules.agent import build_report
 from modules.agent_tools import ToolRuntime
 from modules.chat_agent import run_chat
 from modules.diff_engine import run_reconcile
 from modules.gear import parse_gear
+from modules.live_monitor import scan as live_scan
 from modules.weather import get_source
 
 app = FastAPI(title="户外计划助手", version="0.1.0")
@@ -85,11 +88,12 @@ def route_detail(route_id: str):
 @app.post("/api/routes/gpx")
 async def import_gpx(file: UploadFile = File(...), name: str = Form("我的线路"),
                      activity: str = Form("hiking"), days: int = Form(3)):
+    """轨迹导入：支持 GPX / KML / KMZ（KMZ 是二进制 zip，按原始字节处理）。"""
     try:
-        xml_text = (await file.read()).decode("utf-8", errors="ignore")
-        route = gpx_mod.gpx_to_route(xml_text, name, activity, days)
+        raw = await file.read()
+        route = gpx_mod.track_to_route(raw, file.filename or "", name, activity, days)
     except Exception as e:
-        raise HTTPException(400, "GPX 解析失败: {}".format(e))
+        raise HTTPException(400, "轨迹解析失败: {}".format(e))
     storage.put("gpx_routes", route.id, route.model_dump())
     return route.model_dump()
 
@@ -104,6 +108,29 @@ class GearParseIn(BaseModel):
 def gear_parse(body: GearParseIn):
     items = parse_gear(body.raw_text)
     return {"items": [i.model_dump() for i in items]}
+
+
+class GearConfirmIn(BaseModel):
+    name: str
+    category: str
+    params: dict
+
+
+@app.post("/api/gear/confirm")
+def gear_confirm(body: GearConfirmIn):
+    """用户确认/修改参数后回写装备库，同名装备下次解析直接命中。"""
+    if not body.name.strip():
+        raise HTTPException(400, "装备名不能为空")
+    # 去掉空值，避免把未填的输入框存成 null
+    params = {k: v for k, v in body.params.items() if v is not None and v != ""}
+    gear_db.save_user_entry(body.name, body.category, params)
+    item = GearItem(
+        name=body.name.strip(), category=body.category, params=params,
+        param_source="user", confidence="high",
+        needs_review=bool(gear_db.missing_required(body.category, params)),
+        note="用户确认参数，已存入装备库",
+    )
+    return item.model_dump()
 
 
 # ── 计划与对账 ──────────────────────────────────────────────────
@@ -151,6 +178,7 @@ def create_plan(body: PlanIn):
     result = {
         "plan": plan.model_dump(), "snapshot": snap.model_dump(),
         "events": [e.model_dump() for e in events], **report,
+        "gear_advice": build_gear_advice(plan, route, snap, events),
         "reconciled_at": _now(), "has_diff": False,
     }
     storage.put("reports", plan.id, result)
@@ -175,6 +203,19 @@ def plan_detail(plan_id: str):
     if not p:
         raise HTTPException(404, "计划不存在")
     return p
+
+
+@app.delete("/api/plans/{plan_id}")
+def delete_plan(plan_id: str):
+    """删除计划及其关联数据（快照/报告）。"""
+    p = storage.get("plans", plan_id)
+    if not p:
+        raise HTTPException(404, "计划不存在")
+    for sid in p.get("snapshots", []):
+        storage.delete("snapshots", sid)
+    storage.delete("reports", plan_id)
+    storage.delete("plans", plan_id)
+    return {"deleted": plan_id}
 
 
 class ReconcileIn(BaseModel):
@@ -203,10 +244,33 @@ def reconcile(plan_id: str, body: ReconcileIn):
         "snapshot": new_snap.model_dump(),
         "prev_snapshot": prev_snap.model_dump() if prev_snap else None,
         "events": [e.model_dump() for e in events], **report,
+        "gear_advice": build_gear_advice(plan, route, new_snap, events),
         "reconciled_at": _now(), "has_diff": prev_snap is not None,
     }
     storage.put("reports", plan.id, result)
     return result
+
+
+class GearAddIn(BaseModel):
+    raw_text: str
+
+
+@app.post("/api/plans/{plan_id}/gear")
+def add_gear(plan_id: str, body: GearAddIn):
+    """报告页补录装备：解析文本 → 同名去重后追加 → 存回计划。
+    前端拿到结果后自行调 reconcile 刷新装备建议。"""
+    p = storage.get("plans", plan_id)
+    if not p:
+        raise HTTPException(404, "计划不存在")
+    plan = Plan(**p)
+    items = parse_gear(body.raw_text)
+    if not items:
+        raise HTTPException(400, "未能识别出装备，换个写法试试（如：黑冰B700睡袋、头灯）")
+    existing = set(g.name for g in plan.gear)
+    added = [g for g in items if g.name not in existing]
+    plan.gear.extend(added)
+    storage.put("plans", plan.id, plan.model_dump())
+    return {"plan": plan.model_dump(), "added": [g.model_dump() for g in added]}
 
 
 @app.get("/api/plans/{plan_id}/report")
@@ -226,12 +290,48 @@ def meta():
     }
 
 
+# ── 天气主题（前端背景自适应）────────────────────────────────
+
+_theme_cache: dict = {}          # {key: (expires_ts, payload)}
+_THEME_TTL_S = 600               # 免费 key QPS 有限，主题查询缓存 10 分钟
+
+
+@app.get("/api/weather/theme")
+def weather_theme(lat: float, lon: float, target_date: str = ""):
+    """单点天气主题：target_date 在预报期内返回当日预报（mode=forecast），
+    否则返回当地实时天气（mode=realtime）。前端据此切换背景主题并标注来源。"""
+    target = None
+    if target_date:
+        try:
+            target = date.fromisoformat(target_date)
+        except ValueError:
+            raise HTTPException(400, "target_date 格式应为 YYYY-MM-DD")
+    key = (round(lat, 2), round(lon, 2), target.isoformat() if target else "")
+    hit = _theme_cache.get(key)
+    now_ts = datetime.now().timestamp()
+    if hit and hit[0] > now_ts:
+        return hit[1]
+    try:
+        payload = get_source().theme_weather(lat, lon, target)
+    except Exception as e:
+        raise HTTPException(502, "天气主题查询失败: {}".format(e))
+    _theme_cache[key] = (now_ts + _THEME_TTL_S, payload)
+    if len(_theme_cache) > 500:    # 防止长期运行无限增长
+        _theme_cache.clear()
+    return payload
+
+
 # ── 对话式 Agent（阶段一）────────────────────────────────────────
+
+def _all_routes() -> List[Route]:
+    """预置线路 + 导入的 GPX 线路（供对话 Agent 搜索，导入后立即可聊）。"""
+    return _load_preset_routes() + [Route(**r) for r in storage.all_values("gpx_routes")]
+
 
 def _tool_runtime() -> ToolRuntime:
     """构造工具运行时（依赖现有 main 内函数，零业务重写）。"""
     return ToolRuntime(
-        load_routes_fn=_load_preset_routes,
+        load_routes_fn=_all_routes,
         get_route_fn=_get_route,
         take_snapshot_fn=_take_snapshot,
         reconcile_fn=run_reconcile,
@@ -278,11 +378,12 @@ def get_conversation(conv_id: str):
 
 class ChatIn(BaseModel):
     text: str
+    images: List[str] = []   # data URL 列表（装备照片/线路截图，VLM 直接识别）
 
 
 @app.post("/api/chat/conversations/{conv_id}/messages")
 def post_message(conv_id: str, body: ChatIn):
-    """发消息 → SSE 流式返回（tool_start/tool_end/token/done/error）。"""
+    """发消息（可附图片）→ SSE 流式返回（tool_start/tool_end/token/done/error）。"""
     c = storage.get("conversations", conv_id)
     if not c:
         raise HTTPException(404, "对话不存在")
@@ -291,7 +392,7 @@ def post_message(conv_id: str, body: ChatIn):
 
     def event_stream():
         # yield from 不适合（要捕获 done 后清理），手动迭代
-        for chunk in run_chat(storage, conv, body.text, rt):
+        for chunk in run_chat(storage, conv, body.text, rt, images=body.images):
             yield chunk
 
     return StreamingResponse(
@@ -358,8 +459,8 @@ def live_stop(plan_id: str):
 
 @app.get("/api/plans/{plan_id}/live/stream")
 def live_stream(plan_id: str, interval: int = 60):
-    """实时监测 SSE：每 interval 秒重查各点位小时预报，
-    检测近 3h 内的天气突变（温降/大风/降水），推送 AlertEvent。
+    """实时监测 SSE：每 interval 秒跑一轮 live_monitor.scan，
+    前瞻预警（强降水/大风/骤冷/冰点/气压骤降）+ 预报修正检测，自动去重。
 
     前端保持连接即监测，断开即停止——服务端无状态轮询负担。
     """
@@ -373,40 +474,11 @@ def live_stream(plan_id: str, interval: int = 60):
 
     def event_stream():
         import time as _time
-        from modules.weather import get_source as _gs
-        prev_hours: dict = {}    # waypoint_id -> 上一轮的小时数据 dict
+        state: dict = {}   # 去重集 + 上一轮预报，随连接生命周期
         while True:
-            source = _gs()
             alerts = []
             try:
-                for wp in route.waypoints:
-                    cells = source.fetch_hourly(wp, 6)   # 只查近 6h，省额度
-                    for h in cells[-3:]:   # 看最近 3 个时刻
-                        key = wp.id + "|" + h.datetime
-                        prev = prev_hours.get(key)
-                        if prev:
-                            drop = prev.t2m - h.t2m
-                            if drop >= 5:
-                                alerts.append({
-                                    "severity": "warning" if drop < 8 else "danger",
-                                    "title": "{} 气温骤降".format(wp.name),
-                                    "detail": "{} 气温 {:.1f}→{:.1f}°C（{}h 内降 {:.1f}°C）".format(
-                                        h.datetime, prev.t2m, h.t2m, "3", drop),
-                                    "waypoint_name": wp.name, "datetime": h.datetime,
-                                    "suggestion": "注意保暖，必要时就地避风",
-                                })
-                            if h.ws10m_max - prev.ws10m_max >= 5 or h.ws10m >= 13.9:
-                                alerts.append({
-                                    "severity": "danger" if h.ws10m >= 13.9 else "warning",
-                                    "title": "{} 大风预警".format(wp.name),
-                                    "detail": "{} 风速达 {:.1f}m/s".format(
-                                        h.datetime, h.ws10m),
-                                    "waypoint_name": wp.name, "datetime": h.datetime,
-                                    "suggestion": "避开垭口/山脊暴露段",
-                                })
-                        prev_hours[key] = h
-                # 截断 prev_hours，避免无限增长（只保留最近一轮）
-                prev_hours = {k: v for k, v in list(prev_hours.items())[-200:]}
+                alerts = live_scan(route, get_source(), state)
             except Exception as e:
                 yield "event: error\ndata: " + \
                     json.dumps({"message": "查询失败: {}".format(str(e)[:120])},

@@ -4,15 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>行山对账 · 户外计划助手</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
+<!-- 天气粒子层：雨滴/云/太阳等氛围动效，JS 按 body[data-wx] 生成 -->
+<div id="wxFx" aria-hidden="true"></div>
+
 <header class="topbar">
-  <div class="brand" onclick="showView('routes')">
+  <div class="brand" onclick="showView('chat')">
     <svg viewBox="0 0 32 32" class="logo"><path d="M2 26 L11 8 L16 17 L20 10 L30 26 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="24" cy="6" r="2.6" fill="currentColor"/></svg>
     <div>
       <h1>行山对账</h1>
@@ -20,9 +21,9 @@
     </div>
   </div>
   <div class="topbar-right">
+    <span id="wxBadge" class="wx-badge hidden" title="背景随天气变化 · 数据来自中科天机"></span>
     <span id="sourceBadge" class="badge">…</span>
     <button class="ghost-btn" onclick="showView('chat')">💬 AI 对话</button>
-    <button class="ghost-btn" onclick="showView('routes')">🗺 线路库</button>
     <button class="ghost-btn" onclick="showMyPlans()">我的计划</button>
   </div>
 </header>
@@ -41,16 +42,22 @@
         <div id="chatWelcome" class="chat-welcome">
           <div class="ic">🏔️</div>
           <h3>告诉我你想去哪</h3>
-          <p>像和懂户外的朋友聊天一样，我会帮你选线路、理装备、查天气。</p>
+          <p>像和懂户外的朋友聊天一样，我会帮你选线路、理装备、查天气。<br>
+            也可以直接发 📎 GPX/KML 轨迹、装备照片或行程截图给我。</p>
           <div class="qs">
             <button class="qchip" onclick="quickAsk('想去云南徒步，4天左右，有什么推荐？')">想去云南徒步，4天左右</button>
             <button class="qchip" onclick="quickAsk('下周末武功山天气怎么样？需要带什么装备？')">下周末武功山天气和装备</button>
             <button class="qchip" onclick="quickAsk('我是越野跑新手，有适合入门的比赛线路吗？')">越野跑新手入门线路</button>
+            <button class="qchip" onclick="quickAsk('有哪些线路可以选？帮我都列出来看看')">看看全部线路</button>
           </div>
         </div>
       </div>
+      <div id="attachPreview" class="attach-preview hidden"></div>
       <div class="chat-input">
-        <textarea id="chatInput" rows="1" placeholder="说说你的出行想法…（Enter 发送，Shift+Enter 换行）"
+        <label class="attach-btn" title="发送 GPX/KML/KMZ 轨迹 / 装备照片 / 线路截图">📎
+          <input type="file" id="chatFile" accept=".gpx,.kml,.kmz,image/*" multiple hidden onchange="onChatFiles(this)">
+        </label>
+        <textarea id="chatInput" rows="1" placeholder="说说你的出行想法，或发轨迹/图片…（Enter 发送）"
           oninput="autoGrow(this)" onkeydown="onChatKey(event)"></textarea>
         <button id="sendBtn" onclick="sendMessage()">发送</button>
       </div>
@@ -64,42 +71,27 @@
   </div>
 </section>
 
-<!-- 视图 1：线路选择 -->
-<section id="view-routes" class="view">
-  <div class="section-head">
-    <h2>选择线路</h2>
-    <p>预置经典线路已标注关键点位、海拔与风险段 · 也可导入你自己的 GPX 轨迹</p>
-  </div>
-  <div class="filter-row">
-    <button class="chip active" data-act="all" onclick="filterRoutes('all',this)">全部</button>
-    <button class="chip" data-act="hiking" onclick="filterRoutes('hiking',this)">🥾 多日徒步</button>
-    <button class="chip" data-act="trailrun" onclick="filterRoutes('trailrun',this)">🏃 越野跑</button>
-    <label class="chip gpx-chip">⬆ 导入 GPX<input type="file" id="gpxFile" accept=".gpx" hidden onchange="importGpx(this)"></label>
-  </div>
-  <div id="routeGrid" class="route-grid"></div>
-</section>
-
-<!-- 视图 2：创建计划 -->
+<!-- 视图 2：创建计划（从对话里的线路卡片进入）-->
 <section id="view-plan" class="view hidden">
-  <button class="back-btn" onclick="showView('routes')">← 重选线路</button>
+  <button class="back-btn" onclick="showView('chat')">← 返回对话</button>
   <div class="plan-layout">
     <div id="routeSummary" class="card route-summary"></div>
     <div class="card plan-form">
       <h3>创建出行计划</h3>
       <label class="field-label">出发日期</label>
       <input type="date" id="departDate" class="input">
-      <label class="field-label">你的装备清单 <span class="hint">随手输入品牌型号即可，AI 自动识别参数</span></label>
+      <label class="field-label">你的装备清单（可选） <span class="hint">随手输入品牌型号即可，AI 自动识别参数；没想好可以先建计划，之后再补</span></label>
       <textarea id="gearText" class="input" rows="5" placeholder="例：黑冰B700睡袋、自由之魂帐篷、始祖鸟Beta LT、抓绒、登山杖、头灯…"></textarea>
       <button class="primary-btn" id="parseGearBtn" onclick="parseGear()">🔍 AI 识别装备参数</button>
+      <button class="primary-btn" id="createPlanBtn" onclick="createPlan()">创建计划</button>
       <div id="gearResult" class="gear-result"></div>
-      <button class="primary-btn cta hidden" id="createPlanBtn" onclick="createPlan()">创建计划 · 生成首份天气快照</button>
     </div>
   </div>
 </section>
 
 <!-- 视图 3：对账报告 -->
 <section id="view-report" class="view hidden">
-  <button class="back-btn" onclick="showView('routes')">← 返回线路</button>
+  <button class="back-btn" onclick="showView('chat')">← 返回对话</button>
   <div class="report-head">
     <div>
       <h2 id="reportTitle">对账报告</h2>
@@ -117,16 +109,32 @@
   <div id="loading" class="loading hidden"><div class="spinner"></div><span id="loadingText">正在逐点查询沿线天气…</span></div>
   <div id="reportBody" class="report-grid">
     <div class="report-col">
+      <!-- 天气数据前置：主办方气象主题，逐点天气矩阵放报告最前面 -->
+      <div class="card">
+        <h3 class="card-title">🌤 沿线逐点天气矩阵 <span id="snapTime" class="hint"></span></h3>
+        <div id="wxMatrix" class="wx-matrix"></div>
+      </div>
       <div id="alertList"></div>
+      <div class="card">
+        <h3 class="card-title">🎒 装备建议</h3>
+        <div id="gearAdvice" class="gear-advice"></div>
+        <div class="gear-add-row">
+          <input id="gearAddInput" type="text" placeholder="补充装备，如：头灯、救生毯、黑冰B700睡袋"
+                 onkeydown="if(event.key==='Enter')addGearToPlan()" />
+          <button id="gearAddBtn" onclick="addGearToPlan()">➕ 添加</button>
+        </div>
+      </div>
       <div class="card"><div id="agentReport" class="agent-report"></div></div>
     </div>
     <div class="report-col">
       <div class="card">
-        <h3 class="card-title">沿线逐点天气矩阵 <span id="snapTime" class="hint"></span></h3>
-        <div id="wxMatrix" class="wx-matrix"></div>
+        <h3 class="card-title">⛰ 线路数据与海拔剖面</h3>
+        <div id="routeProfile"></div>
       </div>
-      <button class="ghost-btn full" onclick="showPush()">📲 预览提醒推送（V2 演示）</button>
-      <button class="ghost-btn full" onclick="openLiveMonitor()">📡 进入实时监测</button>
+      <div class="side-actions">
+        <button class="ghost-btn" onclick="showPush()">📲 预览提醒推送</button>
+        <button class="ghost-btn" onclick="openLiveMonitor()">📡 实时监测</button>
+      </div>
     </div>
   </div>
 </section>
@@ -180,10 +188,21 @@
 
 </main>
 
+<!-- 手机 App 版：底部导航（窄屏显示，桌面隐藏） -->
+<nav class="tabbar">
+  <button class="tab-item active" id="tab-chat" onclick="showView('chat')"><span class="ti">💬</span>对话</button>
+  <button class="tab-item" id="tab-plans" onclick="showMyPlans()"><span class="ti">📋</span>计划</button>
+</nav>
+
 <div id="toast" class="toast hidden"></div>
 <div id="planDrawer" class="drawer hidden">
   <div class="drawer-panel">
-    <div class="drawer-head"><h3>我的计划</h3><button class="ghost-btn" onclick="closeDrawer()">✕</button></div>
+    <div class="drawer-head"><h3>我的计划</h3>
+      <div class="drawer-head-actions">
+        <button class="ghost-btn" onclick="newPlanFromDrawer()">＋ 去对话新建</button>
+        <button class="ghost-btn" onclick="closeDrawer()">✕</button>
+      </div>
+    </div>
     <div id="planList"></div>
   </div>
 </div>

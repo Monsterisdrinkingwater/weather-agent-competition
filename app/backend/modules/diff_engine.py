@@ -207,13 +207,90 @@ def gear_gap_check(plan: Plan, route: Route, snap: WeatherSnapshot) -> List[Aler
     return events
 
 
+# ── 规划期风险分析：单快照即可，不依赖历史对比 ──────────────
+
+def _trim_by_kind(events: List[AlertEvent], kind: str, keep: int) -> List[AlertEvent]:
+    """同类风险只保留最严重的 keep 条，避免长线路多点位刷屏。"""
+    same = [e for e in events if e.kind == kind]
+    if len(same) <= keep:
+        return events
+    order = {"danger": 0, "warning": 1, "info": 2}
+    same.sort(key=lambda e: (order.get(e.severity, 9), e.date))
+    drop = set(id(e) for e in same[keep:])
+    return [e for e in events if id(e) not in drop]
+
+
+def forecast_risk_check(plan: Plan, route: Route, snap: WeatherSnapshot) -> List[AlertEvent]:
+    """规划阶段风险扫描：昼夜温差 / 行程内骤变 / 高温 / 冰点。"""
+    events: List[AlertEvent] = []
+    names = _wp_names(route)
+
+    heat_th = TH["t_heat"] - (2.0 if plan.activity == "trailrun" else 0.0)
+    for c in snap.cells:
+        wp_name = names.get(c.waypoint_id, c.waypoint_id)
+
+        # 1) 昼夜温差大：午后与凌晨体感差异巨大
+        rng = c.t_max - c.t_min
+        if rng >= TH["t_range_big"]:
+            events.append(_new_event(
+                plan.id, "temp_range", "info", c.waypoint_id, wp_name, c.date,
+                "{} 昼夜温差达 {:.0f}°C".format(wp_name, rng),
+                "当日 {:.1f}~{:.1f}°C，午后与夜间/凌晨体感差异巨大".format(c.t_min, c.t_max),
+                suggestion="三层穿衣法：速干打底+保暖中层+防风外层，随行程增减",
+            ))
+
+        # 2) 冰点风险（极端低温已由 danger 阈值单独报，这里不重复）
+        if TH["t_min_danger"] < c.t_min <= 0:
+            events.append(_new_event(
+                plan.id, "freeze", "warning", c.waypoint_id, wp_name, c.date,
+                "{} 夜间温度跌破冰点".format(wp_name),
+                "最低温预报 {:.1f}°C，清晨路面/木栈道可能结冰或结霜".format(c.t_min),
+                suggestion="水袋管防冻，备厚手套；结冰路段考虑携带冰爪",
+            ))
+
+        # 3) 高温风险（越野跑对热应激更敏感）
+        if c.t_max >= heat_th:
+            events.append(_new_event(
+                plan.id, "heat", "warning", c.waypoint_id, wp_name, c.date,
+                "{} 高温风险".format(wp_name),
+                "最高温预报 {:.1f}°C，暴晒路段中暑/热射病风险上升".format(c.t_max),
+                suggestion="避开 11-15 点暴晒路段，加大补水并补充电解质",
+            ))
+
+    # 4) 行程内骤变：相邻两天全线最低温骤降（冷空气过境）
+    by_date: Dict[str, List[DayPointWeather]] = {}
+    for c in snap.cells:
+        by_date.setdefault(c.date, []).append(c)
+    dates = sorted(by_date)
+    for d1, d2 in zip(dates, dates[1:]):
+        lo1 = min(c.t_min for c in by_date[d1])
+        cold = min(by_date[d2], key=lambda c: c.t_min)
+        drop = lo1 - cold.t_min
+        if drop >= TH["trip_drop"]:
+            sev = "danger" if drop >= 8 or cold.t_min <= 0 else "warning"
+            events.append(_new_event(
+                plan.id, "trip_swing", sev, cold.waypoint_id,
+                names.get(cold.waypoint_id, cold.waypoint_id), d2,
+                "行程中气温骤降：{} → {}".format(d1[5:], d2[5:]),
+                "全线最低温从 {:.1f}°C 降至 {:.1f}°C（降幅 {:.1f}°C），疑似冷空气过境".format(
+                    lo1, cold.t_min, drop),
+                suggestion="按行程后半段的低温准备保暖，必要时压缩后半段行程提前下撤",
+            ))
+
+    # 同类信息只留最重要的几条，避免多点位长线路刷屏
+    for kind, keep in (("temp_range", 2), ("freeze", 2), ("heat", 2)):
+        events = _trim_by_kind(events, kind, keep)
+    return events
+
+
 def run_reconcile(plan: Plan, route: Route, old: Optional[WeatherSnapshot],
                   new: WeatherSnapshot) -> List[AlertEvent]:
-    """完整对账：变化检测（有历史快照时）+ 装备缺口检查。按严重度排序。"""
+    """完整对账：变化检测（有历史快照时）+ 装备缺口检查 + 规划期风险分析。按严重度排序。"""
     events: List[AlertEvent] = []
     if old is not None:
         events += diff_snapshots(plan, route, old, new)
     events += gear_gap_check(plan, route, new)
+    events += forecast_risk_check(plan, route, new)
     order = {"danger": 0, "warning": 1, "info": 2}
     events.sort(key=lambda e: (order.get(e.severity, 9), e.date))
     return events

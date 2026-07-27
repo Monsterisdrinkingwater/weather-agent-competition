@@ -34,7 +34,8 @@ PYTHONPATH="" ../.venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 80
 
 | 变量 | 作用 | 缺失时 |
 |------|------|--------|
-| `TJ_API_KEY` | 天机天气 API | 演示模拟数据 |
+| `TJ_API_KEY` | 天机天气 API（新版 /v2） | 演示模拟数据 |
+| `TJ_SUBSCRIPTION_ID` | 天机新版 API 订阅 ID | 演示模拟数据 |
 | `MODELSCOPE_API_KEY` | LLM 报告生成 | 模板兜底 |
 | `TAVILY_API_KEY` | 联网搜索装备参数 | 内置知识库兜底 |
 

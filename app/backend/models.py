@@ -32,8 +32,9 @@ class GearItem(BaseModel):
     name: str                           # 用户原始输入，如"黑冰 B700"
     category: str                       # sleep / shelter / rain / warm / footwear / other
     params: Dict[str, Any] = Field(default_factory=dict)   # 温标/防水/克重等
-    param_source: str = "unknown"       # web_search / llm_estimate / builtin / unknown
+    param_source: str = "unknown"       # gear_db / user / web_search / llm_estimate / unknown
     confidence: str = "low"             # high / medium / low
+    needs_review: bool = False          # 未命中装备库/缺必填参数 → 需用户确认
     note: str = ""
 
 
@@ -95,6 +96,7 @@ class Message(BaseModel):
     conversation_id: str
     role: str
     content: str = ""
+    images: List[str] = Field(default_factory=list)  # 用户附带的图片（data URL，VLM 识别用）
     tool_calls: List[Dict[str, Any]] = Field(default_factory=list)  # assistant 发起的工具调用
     tool_call_id: str = ""              # role=tool 时关联的调用 id
     tool_name: str = ""                 # role=tool 时记录工具名（前端可视化用）
@@ -124,4 +126,4 @@ class HourWeather(BaseModel):
     wd10m: str                          # 10m 主导风向
     rh2m: float                         # 2m 相对湿度 %
     tp_mm: float                        # 该时段降水量 mm
-    slp: float                          # 海平面气压 hPa
+    slp: float                          # 地表气压 hPa（天机 v2 psz，Pa 已换算）

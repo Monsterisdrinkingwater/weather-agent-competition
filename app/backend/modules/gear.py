@@ -1,66 +1,59 @@
 """装备模块：用户自由输入装备名/清单 → 结构化 GearItem。
 
-解析链（逐级降级，任何一级失败不阻塞）：
-1. LLM + 联网搜索：Tavily 搜装备参数，LLM 抽取结构化字段（confidence=high）
-2. 纯 LLM 估参：无搜索 Key 或搜索失败时，LLM 用内置知识估计（confidence=medium）
-3. 内置知识库：无 LLM 时，关键词规则匹配常见装备（confidence=low~high）
+解析链（数据库优先，LLM 只做预填）：
+1. 装备数据库（gear_db：预置库 + 用户回写库）：命中即用库内参数，无需确认
+2. 未命中 → LLM 估参预填（可选 Tavily 搜索增强），标记 needs_review=True，
+   由用户在前端确认/修改后生效，并回写 gear_db_user 供下次直接命中
+3. LLM 不可用 → 空参数 + needs_review=True（纯手填兜底）
 """
 import json
 import logging
 import re
+import time
 from typing import Any, Dict, Iterator, List, Optional
 
 import httpx
 
-from config import MODELSCOPE_API_KEY, MODELSCOPE_BASE_URL, LLM_MODEL, TAVILY_API_KEY
+from config import (MODELSCOPE_API_KEY, MODELSCOPE_BASE_URL, LLM_MODEL,
+                    LLM_MODEL_CHAIN, TAVILY_API_KEY)
 from models import GearItem
+from modules import gear_db
 
 logger = logging.getLogger(__name__)
 
-# ── 内置知识库：常见国产/主流户外装备（兜底 + 演示保障）──────────
-_BUILTIN = [
-    # 匹配关键词(小写), 类别, 参数, 置信度, 备注
-    (r"黑冰.*b1500|b1500", "sleep", {"comfort_c": -12, "limit_c": -18, "fill": "700蓬鹅绒", "weight_g": 1900}, "high", "黑冰 B1500 羽绒睡袋"),
-    (r"黑冰.*b1000|b1000", "sleep", {"comfort_c": -5, "limit_c": -12, "fill": "700蓬鹅绒", "weight_g": 1450}, "high", "黑冰 B1000 羽绒睡袋"),
-    (r"黑冰.*b700|b700", "sleep", {"comfort_c": 1, "limit_c": -5, "fill": "700蓬鹅绒", "weight_g": 1150}, "high", "黑冰 B700 羽绒睡袋"),
-    (r"黑冰.*b400|b400", "sleep", {"comfort_c": 8, "limit_c": 3, "fill": "700蓬鹅绒", "weight_g": 800}, "high", "黑冰 B400 羽绒睡袋"),
-    (r"信封|棉睡袋", "sleep", {"comfort_c": 10, "limit_c": 5}, "medium", "普通棉睡袋按温标 10°C 估"),
-    (r"msr.*hubba|hubba", "shelter", {"type": "双层三季帐", "wind_ms": 15, "weight_g": 1720}, "high", "MSR Hubba Hubba NX 2"),
-    (r"自由之魂|远行客|libra", "shelter", {"type": "双层三季帐", "wind_ms": 15}, "medium", "自由之魂系列三季帐"),
-    (r"三峰|3f.*ul", "shelter", {"type": "双层三季帐", "wind_ms": 13}, "medium", "三峰出品三季帐"),
-    (r"四季帐|高山帐", "shelter", {"type": "四季帐", "wind_ms": 22}, "medium", "四季/高山帐"),
-    (r"始祖鸟.*beta|beta\s*(lt|ar|sl)", "rain", {"waterproof_mm": 28000, "membrane": "GORE-TEX"}, "high", "始祖鸟 Beta 系列硬壳"),
-    (r"凯乐石.*hardshell|mont-x|filo", "rain", {"waterproof_mm": 20000, "membrane": "FILTEC"}, "medium", "凯乐石硬壳"),
-    (r"冲锋衣|硬壳", "rain", {"waterproof_mm": 10000}, "low", "通用冲锋衣按 10000mm 估"),
-    (r"雨衣|雨披", "rain", {"waterproof_mm": 8000}, "medium", "雨披类，防风性弱"),
-    (r"皮肤衣|防晒衣", "rain", {"waterproof_mm": 0}, "high", "皮肤衣不防水"),
-    (r"羽绒服|排骨羽绒", "warm", {"insulation": "down", "rating_c": -5}, "medium", "轻量羽绒保暖层"),
-    (r"抓绒", "warm", {"insulation": "fleece", "rating_c": 8}, "medium", "抓绒中间层"),
-    (r"棉服|化纤棉", "warm", {"insulation": "synthetic", "rating_c": 0}, "medium", "化纤棉保暖层"),
-    (r"越野跑鞋|hoka|speedgoat|萨洛蒙|salomon|凯乐石.*fuga|fuga", "footwear", {"type": "越野跑鞋", "grip": "湿滑路面注意"}, "medium", "越野跑鞋"),
-    (r"登山鞋|徒步鞋|重装鞋", "footwear", {"type": "徒步鞋", "waterproof": True}, "medium", "徒步鞋"),
-    (r"雪套", "other", {"use": "防雪防泥"}, "high", "雪套"),
-    (r"冰爪", "other", {"use": "冰雪路面"}, "high", "冰爪"),
-    (r"登山杖|手杖", "other", {"use": "省力/防滑"}, "high", "登山杖"),
-    (r"头灯", "other", {"use": "夜间行进必备"}, "high", "头灯"),
-    (r"救生毯|急救毯", "other", {"use": "失温应急"}, "high", "救生毯"),
-    (r"炉头|气罐|套锅", "other", {"use": "热食热饮，低温关键"}, "high", "炊具"),
-]
+# 主模型 429/配额耗尽时依次换用的备用模型（含主模型本身）
+_MODEL_CHAIN = LLM_MODEL_CHAIN or [LLM_MODEL]
+
+
+def _is_vl_model(model: str) -> bool:
+    """VL 模型才能吃多模态 content（image_url）；纯文本模型需先剥图。"""
+    return "-vl-" in model.lower()
+
+
+def _strip_image_parts(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """把多模态 content 降级成纯文本，供非 VL 备用模型使用。"""
+    out = []
+    for m in messages:
+        c = m.get("content")
+        if isinstance(c, list):
+            texts = [p.get("text", "") for p in c if p.get("type") == "text"]
+            m = dict(m, content="[用户发了图片，当前模型不支持读图] " + " ".join(texts))
+        out.append(m)
+    return out
+
+
+def _should_fallback(exc: Exception) -> bool:
+    """仅在限流/配额类错误上降级换模型；其它错误（如网络、鉴权）直接上抛。"""
+    resp = getattr(exc, "response", None)
+    if resp is not None and resp.status_code in (429, 503):
+        return True
+    return False
 
 _CAT_GUESS = [
     (r"睡袋", "sleep"), (r"帐篷|天幕", "shelter"),
     (r"冲锋衣|雨|防水", "rain"), (r"羽绒|抓绒|保暖|棉服", "warm"),
     (r"鞋|靴", "footwear"),
 ]
-
-
-def _builtin_lookup(name: str) -> Optional[GearItem]:
-    low = name.lower()
-    for pattern, cat, params, conf, note in _BUILTIN:
-        if re.search(pattern, low):
-            return GearItem(name=name, category=cat, params=params,
-                            param_source="builtin", confidence=conf, note=note)
-    return None
 
 
 def _guess_category(name: str) -> str:
@@ -92,20 +85,34 @@ def _web_search(query: str) -> str:
 
 # ── LLM 调用（魔搭 API-Inference，OpenAI 兼容）──────────────────
 
+# 免费 key 按模型限 QPS：工具决策与流式回复背靠背发出必 429，
+# 所有 LLM 请求共享一个最小间隔闸门
+_MIN_LLM_GAP_S = 1.1
+_last_llm_ts = 0.0
+
+
+def _mark_llm_ts() -> None:
+    global _last_llm_ts
+    _last_llm_ts = time.time()
+
+
+def _throttle() -> None:
+    """确保距上一次请求结束至少间隔 _MIN_LLM_GAP_S 再发下一次。"""
+    wait = _last_llm_ts + _MIN_LLM_GAP_S - time.time()
+    if wait > 0:
+        time.sleep(wait)
+    _mark_llm_ts()
+
+
 def _llm_chat(system: str, user: str) -> str:
     if not MODELSCOPE_API_KEY:
         return ""
     try:
-        resp = httpx.post(
-            MODELSCOPE_BASE_URL + "/chat/completions",
-            headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
-            json={"model": LLM_MODEL, "temperature": 0.2,
-                  "messages": [{"role": "system", "content": system},
-                               {"role": "user", "content": user}]},
-            timeout=60,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        msg = llm_chat_with_tools(
+            [{"role": "system", "content": system},
+             {"role": "user", "content": user}],
+            tools=None, temperature=0.2)
+        return msg.get("content", "") or ""
     except Exception as e:
         logger.warning("LLM 调用失败，降级为内置知识库: %s: %s", type(e).__name__, str(e)[:200])
         return ""
@@ -119,10 +126,11 @@ def require_llm() -> None:
 
 def _build_payload(messages: List[Dict[str, Any]],
                    tools: Optional[List[Dict[str, Any]]] = None,
-                   temperature: float = 0.3) -> Dict[str, Any]:
+                   temperature: float = 0.3,
+                   model: str = "") -> Dict[str, Any]:
     """构造 OpenAI 兼容请求体（messages 已是完整对话历史，含 system/user/assistant/tool）。"""
     payload: Dict[str, Any] = {
-        "model": LLM_MODEL, "temperature": temperature, "messages": messages,
+        "model": model or LLM_MODEL, "temperature": temperature, "messages": messages,
     }
     if tools:
         payload["tools"] = tools
@@ -137,16 +145,33 @@ def llm_chat_with_tools(messages: List[Dict[str, Any]],
 
     用于对话 Agent 的工具决策阶段——魔搭 OpenAI 兼容接口在 stream+tools 组合下
     解析 tool_calls 易出错，故工具决策一律走非流式。
+    主模型 429/配额耗尽时沿 _MODEL_CHAIN 依次降级；降到非 VL 模型时自动剥图。
     """
     require_llm()
-    resp = httpx.post(
-        MODELSCOPE_BASE_URL + "/chat/completions",
-        headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
-        json=_build_payload(messages, tools, temperature),
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]
+    last_exc: Optional[Exception] = None
+    for i, model in enumerate(_MODEL_CHAIN):
+        msgs = messages if _is_vl_model(model) else _strip_image_parts(messages)
+        _throttle()
+        try:
+            resp = httpx.post(
+                MODELSCOPE_BASE_URL + "/chat/completions",
+                headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
+                json=_build_payload(msgs, tools, temperature, model),
+                timeout=60,
+            )
+            resp.raise_for_status()
+            if i > 0:
+                logger.info("LLM 已降级到备用模型: %s", model)
+            return resp.json()["choices"][0]["message"]
+        except Exception as e:
+            if _should_fallback(e) and i < len(_MODEL_CHAIN) - 1:
+                logger.warning("模型 %s 限流/配额耗尽，降级到 %s", model, _MODEL_CHAIN[i + 1])
+                last_exc = e
+                continue
+            raise
+        finally:
+            _mark_llm_ts()   # 以请求结束时刻计间隔，防长请求后背靠背再发
+    raise last_exc  # 链上全部限流，抛最后一个错误
 
 
 def llm_chat_stream(messages: List[Dict[str, Any]],
@@ -155,32 +180,50 @@ def llm_chat_stream(messages: List[Dict[str, Any]],
 
     用于把对话 Agent 的最终回复推给前端打字机渲染。
     OpenAI 兼容 SSE：data: {chunk}\\n\\n，末尾 data: [DONE]。
+    降级策略同 llm_chat_with_tools；一旦开始吐 token 就不再切模型。
     """
     require_llm()
-    payload = _build_payload(messages, tools=None, temperature=temperature)
-    payload["stream"] = True
-    with httpx.stream(
-        "POST", MODELSCOPE_BASE_URL + "/chat/completions",
-        headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
-        json=payload, timeout=120,
-    ) as resp:
-        resp.raise_for_status()
-        for line in resp.iter_lines():
-            if not line or not line.startswith("data:"):
+    last_exc: Optional[Exception] = None
+    for i, model in enumerate(_MODEL_CHAIN):
+        msgs = messages if _is_vl_model(model) else _strip_image_parts(messages)
+        payload = _build_payload(msgs, tools=None, temperature=temperature, model=model)
+        payload["stream"] = True
+        _throttle()
+        try:
+            with httpx.stream(
+                "POST", MODELSCOPE_BASE_URL + "/chat/completions",
+                headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
+                json=payload, timeout=120,
+            ) as resp:
+                resp.raise_for_status()   # 失败发生在首 token 前，此处可安全降级
+                if i > 0:
+                    logger.info("LLM 流式已降级到备用模型: %s", model)
+                for line in resp.iter_lines():
+                    if not line or not line.startswith("data:"):
+                        continue
+                    data = line[len("data:"):].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    choices = chunk.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta", {}).get("content")
+                    if delta:
+                        yield delta
+                return
+        except Exception as e:
+            if _should_fallback(e) and i < len(_MODEL_CHAIN) - 1:
+                logger.warning("流式模型 %s 限流/配额耗尽，降级到 %s", model, _MODEL_CHAIN[i + 1])
+                last_exc = e
                 continue
-            data = line[len("data:"):].strip()
-            if data == "[DONE]":
-                break
-            try:
-                chunk = json.loads(data)
-            except json.JSONDecodeError:
-                continue
-            choices = chunk.get("choices") or []
-            if not choices:
-                continue
-            delta = choices[0].get("delta", {}).get("content")
-            if delta:
-                yield delta
+            raise
+        finally:
+            _mark_llm_ts()
+    raise last_exc
 
 
 _PARSE_SYSTEM = """你是户外装备专家。把用户的装备清单解析为 JSON 数组，每项：
@@ -220,44 +263,71 @@ def _llm_parse(raw_text: str, search_context: str) -> List[GearItem]:
     return out
 
 
+# 占位词不是装备：对话建计划时 LLM 常传入“暂无装备”之类文本，直接过滤
+_PLACEHOLDER = re.compile(
+    r"^(暂无.*|无|没有.*|待定|待补充|不清楚|未知|无装备|none|n/?a|-+|\?+|？+)$",
+    re.IGNORECASE)
+
+
 def _split_lines(raw_text: str) -> List[str]:
     parts = re.split(r"[\n,，、;；]+", raw_text)
-    return [p.strip() for p in parts if p.strip()]
+    return [p.strip() for p in parts
+            if p.strip() and not _PLACEHOLDER.match(p.strip())]
 
 
 def parse_gear(raw_text: str) -> List[GearItem]:
-    """主入口：三级降级解析。"""
+    """主入口：装备数据库优先，未命中的由 LLM 预填估计值待用户确认。"""
     names = _split_lines(raw_text)
     if not names:
         return []
 
-    # 1) LLM（带搜索上下文则参数更准）
-    search_ctx = ""
-    if TAVILY_API_KEY:
-        # 只搜前 5 件，控制延迟与额度
-        for n in names[:5]:
-            search_ctx += _web_search(n + " 参数 温标 防水指数 户外装备")
-    llm_items = _llm_parse(raw_text, search_ctx)
-    if llm_items:
-        # 内置库校准：命中内置库且 LLM 置信度低的，以内置参数为准
-        for item in llm_items:
-            if item.confidence != "high":
-                hit = _builtin_lookup(item.name)
-                if hit:
-                    item.params, item.param_source = hit.params, "builtin"
-                    item.confidence, item.note = hit.confidence, hit.note
-        return llm_items
-
-    # 2) 纯内置知识库 + 类别猜测（无 LLM 环境的演示兜底）
-    out = []
+    # 1) 逐件匹配装备库（用户回写库优先）
+    items: List[Optional[GearItem]] = []
+    unmatched: List[str] = []
     for n in names:
-        hit = _builtin_lookup(n)
-        if hit:
-            out.append(hit)
+        entry = gear_db.match(n)
+        if entry:
+            items.append(GearItem(
+                name=n, category=entry["category"], params=dict(entry["params"]),
+                param_source=entry.get("source", "gear_db"), confidence="high",
+                needs_review=False, note=entry.get("name", "")))
         else:
-            out.append(GearItem(
+            items.append(None)
+            unmatched.append(n)
+
+    # 2) 未命中条目：LLM 估参预填（可选搜索增强），等用户确认
+    est_by_name: Dict[str, GearItem] = {}
+    est_ordered: List[GearItem] = []
+    search_ctx = ""
+    if unmatched:
+        if TAVILY_API_KEY:
+            # 只搜前 5 件，控制延迟与额度
+            for n in unmatched[:5]:
+                search_ctx += _web_search(n + " 参数 温标 防水指数 户外装备")
+        est_ordered = _llm_parse("\n".join(unmatched), search_ctx)
+        est_by_name = {e.name.strip().lower(): e for e in est_ordered}
+
+    # 3) 回填：名称对得上用名称，对不上按顺序对齐（LLM 按输入行序输出）
+    for idx, n in enumerate(unmatched):
+        est = est_by_name.get(n.strip().lower())
+        if est is None and idx < len(est_ordered):
+            est = est_ordered[idx]
+        pos = items.index(None)
+        if est:
+            items[pos] = GearItem(
+                name=n, category=est.category, params=est.params,
+                param_source="web_search" if search_ctx else "llm_estimate",
+                confidence="medium", needs_review=True,
+                note=est.note or "AI 估计参数，请确认")
+        else:
+            items[pos] = GearItem(
                 name=n, category=_guess_category(n), params={},
                 param_source="unknown", confidence="low",
-                note="未识别参数，建议手动确认",
-            ))
-    return out
+                needs_review=True, note="未识别参数，请补齐")
+
+    # 4) 必填参数缺失的一律转入待确认（含库命中但库内参数不全的情况）
+    result = [it for it in items if it is not None]
+    for it in result:
+        if gear_db.missing_required(it.category, it.params):
+            it.needs_review = True
+    return result

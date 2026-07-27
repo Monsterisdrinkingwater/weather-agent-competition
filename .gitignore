@@ -8,3 +8,6 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# 本地环境变量（含天机 API key 等敏感信息，禁止提交）
+.env

@@ -82,15 +82,15 @@ TOOLS: List[Dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "create_plan",
-            "description": "在用户确认线路、出发日期、装备后创建出行计划，自动生成首份天气快照和对账。信息齐全且用户同意时调用。",
+            "description": "在用户确认线路和出发日期后创建出行计划，自动生成首份天气快照和对账。装备可以为空（用户没想好时先建计划，之后再补）。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "route_id": {"type": "string", "description": "线路 id"},
                     "depart_date": {"type": "string", "description": "出发日期 YYYY-MM-DD"},
-                    "gear_raw_text": {"type": "string", "description": "装备清单原文（会自动解析）"},
+                    "gear_raw_text": {"type": "string", "description": "装备清单原文（会自动解析；没有装备传空字符串）"},
                 },
-                "required": ["route_id", "depart_date", "gear_raw_text"],
+                "required": ["route_id", "depart_date"],
             },
         },
     },
@@ -131,7 +131,8 @@ def _tool_search_routes(rt: ToolRuntime, args: Dict[str, Any]) -> Dict[str, Any]
     activity = args.get("activity") or "all"
     difficulty = args.get("difficulty") or "all"
 
-    routes = rt.load_routes()
+    all_routes = rt.load_routes()
+    routes = all_routes
     if activity != "all":
         routes = [r for r in routes if r.activity == activity]
     if difficulty != "all":
@@ -142,15 +143,23 @@ def _tool_search_routes(rt: ToolRuntime, args: Dict[str, Any]) -> Dict[str, Any]
         routes = [r for r in routes
                   if kw in r.region.lower() or kw in r.name.lower()]
 
-    return {
-        "count": len(routes),
-        "routes": [{
+    def _brief(r):
+        return {
             "id": r.id, "name": r.name, "region": r.region,
             "activity": r.activity, "days": r.days,
             "distance_km": r.distance_km, "ascent_m": r.ascent_m,
             "difficulty": r.difficulty, "summary": r.summary,
-        } for r in routes[:8]],   # 控制上下文长度
+        }
+
+    result: Dict[str, Any] = {
+        "count": len(routes),
+        "routes": [_brief(r) for r in routes[:8]],   # 控制上下文长度
     }
+    if not routes:
+        # 命中 0 条时直接附上全部线路，避免 LLM 换参数盲目重试
+        result["hint"] = "筛选条件下没有匹配线路，不要重试搜索；以下是当前线路库全部线路，从中挑最接近的推荐给用户"
+        result["all_routes"] = [_brief(r) for r in all_routes]
+    return result
 
 
 def _tool_get_route_detail(rt: ToolRuntime, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -159,21 +168,34 @@ def _tool_get_route_detail(rt: ToolRuntime, args: Dict[str, Any]) -> Dict[str, A
 
 
 def _tool_parse_gear(rt: ToolRuntime, args: Dict[str, Any]) -> Dict[str, Any]:
+    from modules import gear_db
     items = parse_gear(args["raw_text"])
-    return {
-        "count": len(items),
-        "items": [{
+    out_items = []
+    need_ask = []
+    for g in items:
+        missing = gear_db.missing_required(g.category, g.params)
+        out_items.append({
             "name": g.name, "category": g.category, "params": g.params,
-            "confidence": g.confidence, "note": g.note,
-        } for g in items],
-    }
+            "param_source": g.param_source, "confidence": g.confidence,
+            "needs_confirm": g.needs_review, "missing_params": missing,
+            "note": g.note,
+        })
+        if g.needs_review and missing:
+            need_ask.append({"name": g.name, "missing_params": missing})
+    result: Dict[str, Any] = {"count": len(items), "items": out_items}
+    if need_ask:
+        result["hint"] = ("以下装备未在装备库命中且缺关键参数，当前参数只是估计值："
+                          "先向用户确认这些参数（如睡袋舒适温标、雨具防水指数），"
+                          "拿到后把数值写进装备描述再建计划，不要用估计值直接建计划")
+        result["need_ask"] = need_ask
+    return result
 
 
 def _tool_create_plan(rt: ToolRuntime, args: Dict[str, Any]) -> Dict[str, Any]:
     """建计划 + 首份天气快照 + 对账。复用 main.create_plan 的核心逻辑。"""
     from modules.diff_engine import run_reconcile
     route = rt.get_route(args["route_id"])
-    gear = parse_gear(args["gear_raw_text"])
+    gear = parse_gear(args.get("gear_raw_text") or "")   # 装备可空，后续在报告页/对话里补
     plan = Plan(
         id=uuid.uuid4().hex[:10], route_id=route.id, activity=route.activity,
         depart_date=args["depart_date"], gear=[g.model_dump() for g in gear],
