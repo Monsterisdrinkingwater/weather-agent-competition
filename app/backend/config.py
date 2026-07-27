@@ -19,7 +19,7 @@ MODELSCOPE_API_KEY = os.environ.get("MODELSCOPE_API_KEY", "")
 MODELSCOPE_BASE_URL = os.environ.get(
     "MODELSCOPE_BASE_URL", "https://api-inference.modelscope.cn/v1"
 )
-LLM_MODEL = os.environ.get("LLM_MODEL", "Qwen/Qwen2.5-72B-Instruct")
+LLM_MODEL = os.environ.get("LLM_MODEL", "Qwen/Qwen3-Coder-30B-A3B-Instruct")
 
 # ── 联网搜索（装备参数检索，可选）────────────────────────────
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
