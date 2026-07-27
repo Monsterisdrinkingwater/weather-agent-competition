@@ -84,3 +84,44 @@ class Plan(BaseModel):
     gear: List[GearItem] = Field(default_factory=list)
     snapshots: List[str] = Field(default_factory=list)   # snapshot id 列表（时序）
     created_at: str = ""
+    status: str = "planning"            # planning / active / completed（活动期间实时监测用）
+
+
+# ── 对话式 Agent（阶段一）────────────────────────────────────────
+
+class Message(BaseModel):
+    """对话消息。role=user/assistant/tool，tool_calls/tool_call_id 供 function calling。"""
+    id: str
+    conversation_id: str
+    role: str
+    content: str = ""
+    tool_calls: List[Dict[str, Any]] = Field(default_factory=list)  # assistant 发起的工具调用
+    tool_call_id: str = ""              # role=tool 时关联的调用 id
+    tool_name: str = ""                 # role=tool 时记录工具名（前端可视化用）
+    created_at: str = ""
+
+
+class Conversation(BaseModel):
+    """一次多轮对话，产出/关联一个计划。"""
+    id: str
+    plan_id: Optional[str] = None       # 对话产出的计划（建计划后回填）
+    route_id: Optional[str] = None      # 临时选中线路（建计划前的草稿）
+    title: str = "新对话"
+    status: str = "active"              # active / summarized
+    messages: List[str] = Field(default_factory=list)  # message id 列表
+    created_at: str = ""
+    updated_at: str = ""
+
+
+# ── 小时级天气（阶段二·实时监测）─────────────────────────────────
+
+class HourWeather(BaseModel):
+    """单点单时刻天气（15min 粒度），用于活动期间实时监测。"""
+    waypoint_id: str
+    datetime: str                       # ISO 时间（含时区，如 2026-08-01T14:00+08:00）
+    t2m: float                          # 2m 气温 °C
+    ws10m: float                        # 10m 风速 m/s
+    wd10m: str                          # 10m 主导风向
+    rh2m: float                         # 2m 相对湿度 %
+    tp_mm: float                        # 该时段降水量 mm
+    slp: float                          # 海平面气压 hPa

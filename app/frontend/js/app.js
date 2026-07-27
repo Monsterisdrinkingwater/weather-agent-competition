@@ -9,6 +9,11 @@ var state = {
   plan: null,               // 当前计划
   report: null,             // 最近一次对账结果
   meta: { weather_source: "demo", llm_enabled: false, web_search_enabled: false },
+  // ── 对话式 Agent（阶段一）
+  conversation: null,       // 当前对话 {id, messages:[], plan_id}
+  chatBusy: false,          // 是否正在等待回复
+  producedPlans: [],        // 本次对话产出的计划 [{plan_id, route_name, depart_date}]
+  liveStream: null,         // 实时监测 SSE 连接（阶段二）
 };
 
 var KIND_LABEL = { start: "起点", pass: "垭口", camp: "营地", peak: "山顶", water: "水源/横渡", finish: "终点", aid: "补给站" };
@@ -67,8 +72,9 @@ function dayLabel(dateStr) {
 // ── 视图切换 ──────────────────────────────────────────
 
 function showView(name) {
-  ["routes", "plan", "report", "push"].forEach(function (v) {
-    $("view-" + v).classList.toggle("hidden", v !== name);
+  ["chat", "routes", "plan", "report", "push", "live"].forEach(function (v) {
+    var el = $("view-" + v);
+    if (el) el.classList.toggle("hidden", v !== name);
   });
   window.scrollTo(0, 0);
 }
@@ -87,9 +93,15 @@ function init() {
       badge.classList.add("live");
     }
     $("demoScenarios").classList.toggle("hidden", m.weather_source !== "demo");
+    // 对话 badge：LLM 是否可用
+    var cb = $("chatBadge");
+    if (cb) {
+      cb.textContent = m.llm_enabled ? "🤖 AI 在线" : "⚠ 需配置 LLM Key";
+    }
   }).catch(function () { $("sourceBadge").textContent = "离线"; });
 
   loadRoutes();
+  showView("chat");
 
   // 出发日期默认 +3 天
   var d = new Date(Date.now() + 3 * 86400000);
@@ -636,5 +648,383 @@ function openPlan(planId) {
 $("planDrawer").addEventListener("click", function (ev) {
   if (ev.target === this) closeDrawer();
 });
+
+// ── 视图：AI 对话（阶段一）─────────────────────────────────
+
+function autoGrow(ta) {
+  ta.style.height = "auto";
+  ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
+}
+
+function onChatKey(ev) {
+  if (ev.key === "Enter" && !ev.shiftKey) {
+    ev.preventDefault();
+    sendMessage();
+  }
+}
+
+function quickAsk(text) {
+  $("chatInput").value = text;
+  autoGrow($("chatInput"));
+  sendMessage();
+}
+
+function _scrollChatBottom() {
+  var box = $("chatMessages");
+  box.scrollTop = box.scrollHeight;
+}
+
+function _appendMsg(role, html) {
+  var box = $("chatMessages");
+  var div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = '<div class="msg-avatar">' + (role === "user" ? "🧑" : "🏔️") + "</div>" +
+    '<div class="msg-bubble">' + html + "</div>";
+  box.appendChild(div);
+  _scrollChatBottom();
+  return div;
+}
+
+function _appendToolBubble(label) {
+  var box = $("chatMessages");
+  var div = document.createElement("div");
+  div.className = "tool-bubble";
+  div.innerHTML = '<div class="spinner"></div><span><span class="ic">⚙</span> ' + esc(label) + "</span>";
+  box.appendChild(div);
+  _scrollChatBottom();
+  return div;
+}
+
+function _finishToolBubble(el, brief) {
+  el.classList.add("done");
+  el.innerHTML = '<span class="ic">✓</span><span>' + esc(brief) + "</span>";
+}
+
+function _ensureConversation() {
+  if (state.conversation) return Promise.resolve(state.conversation);
+  return postJSON("/api/chat/conversations", {}).then(function (c) {
+    state.conversation = c;
+    return c;
+  });
+}
+
+function sendMessage() {
+  if (state.chatBusy) return;
+  var text = $("chatInput").value.trim();
+  if (!text) return;
+  if (!state.meta.llm_enabled) {
+    toast("对话功能需要配置 MODELSCOPE_API_KEY");
+    return;
+  }
+  // 隐藏欢迎语
+  var w = $("chatWelcome");
+  if (w) w.classList.add("hidden");
+
+  _appendMsg("user", esc(text));
+  $("chatInput").value = "";
+  autoGrow($("chatInput"));
+  state.chatBusy = true;
+  $("sendBtn").disabled = true;
+  $("sendBtn").textContent = "…";
+
+  _ensureConversation().then(function (conv) {
+    return _streamChat(conv.id, text);
+  }).catch(function (e) {
+    _appendMsg("assistant", '<span style="color:var(--danger)">⚠ ' + esc(e.message) + "</span>");
+  }).finally(function () {
+    state.chatBusy = false;
+    $("sendBtn").disabled = false;
+    $("sendBtn").textContent = "发送";
+  });
+}
+
+// 用 fetch + ReadableStream 解析 POST SSE（EventSource 不支持 POST）
+function _streamChat(convId, text) {
+  return fetch(API + "/api/chat/conversations/" + convId + "/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
+    body: JSON.stringify({ text: text }),
+  }).then(function (res) {
+    if (!res.ok) {
+      return res.json().catch(function () { return {}; }).then(function (b) {
+        throw new Error(b.detail || ("请求失败 " + res.status));
+      });
+    }
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder("utf-8");
+    var buffer = "";
+    var assistantEl = null;       // 流式回复气泡
+    var assistantHtml = "";       // 累计的 markdown 文本
+    var pendingTool = null;       // 当前工具气泡
+
+    function pump() {
+      return reader.read().then(function (chunk) {
+        if (chunk.done) return;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        // SSE 以 \n\n 分隔事件
+        var parts = buffer.split("\n\n");
+        buffer = parts.pop();      // 最后一段可能不完整，留到下次
+        parts.forEach(function (part) { _handleSSE(part, ctx); });
+        return pump();
+      });
+    }
+
+    var ctx = {
+      onToolStart: function (data) {
+        pendingTool = _appendToolBubble(data.label);
+      },
+      onToolEnd: function (data) {
+        if (pendingTool) { _finishToolBubble(pendingTool, data.result_brief); pendingTool = null; }
+        else { _appendToolBubble(data.result_brief); }  // 兜底
+      },
+      onToken: function (data) {
+        if (!assistantEl) {
+          // 关掉残留的工具气泡（如有）
+          if (pendingTool) { pendingTool.classList.add("done"); pendingTool = null; }
+          assistantEl = _appendMsg("assistant", '<span class="cursor"></span>');
+        }
+        assistantHtml += data.text;
+        assistantEl.querySelector(".msg-bubble").innerHTML = mdToHtml(assistantHtml) + '<span class="cursor"></span>';
+        _scrollChatBottom();
+      },
+      onDone: function (data) {
+        if (assistantEl) {
+          assistantEl.querySelector(".msg-bubble").innerHTML = mdToHtml(assistantHtml);
+        }
+        if (data.plan_id) _addProducedPlan(data.plan_id);
+      },
+      onError: function (data) {
+        _appendMsg("assistant", '<span style="color:var(--danger)">⚠ ' + esc(data.message || "出错了") + "</span>");
+      },
+    };
+
+    return pump();
+  });
+}
+
+function _handleSSE(rawEvent, ctx) {
+  // 解析 event: xxx \n data: {...}
+  var evtType = "message", dataLines = [];
+  rawEvent.split("\n").forEach(function (line) {
+    if (line.indexOf("event:") === 0) evtType = line.slice(6).trim();
+    else if (line.indexOf("data:") === 0) dataLines.push(line.slice(5).trim());
+  });
+  if (!dataLines.length) return;
+  var data = {};
+  try { data = JSON.parse(dataLines.join("\n")); } catch (e) { return; }
+  if (evtType === "tool_start") ctx.onToolStart(data);
+  else if (evtType === "tool_end") ctx.onToolEnd(data);
+  else if (evtType === "token") ctx.onToken(data);
+  else if (evtType === "done") ctx.onDone(data);
+  else if (evtType === "error") ctx.onError(data);
+}
+
+function _addProducedPlan(planId) {
+  // 拉计划详情，渲染到侧栏
+  api("/api/plans/" + planId + "/report").then(function (r) {
+    var info = {
+      plan_id: planId,
+      route_name: (state.routes.find(function (x) { return x.id === r.plan.route_id; }) || {}).name || "计划",
+      depart_date: r.plan.depart_date,
+      gear_count: (r.plan.gear || []).length,
+      alert_count: (r.events || []).length,
+      report: r,
+    };
+    state.producedPlans.push(info);
+    _renderChatAside();
+  }).catch(function () {});
+}
+
+function _renderChatAside() {
+  var box = $("chatAsideBody");
+  if (!state.producedPlans.length) {
+    box.innerHTML = '<p class="chat-empty-aside">通过对话创建的计划会显示在这里。</p>';
+    return;
+  }
+  box.innerHTML = state.producedPlans.map(function (p) {
+    return '<div class="plan-card-mini" onclick=\'openProducedPlan("' + p.plan_id + '")\'>' +
+      '<div class="pn">' + esc(p.route_name) + "</div>" +
+      '<div class="pm">出发 ' + esc(p.depart_date) + " · 装备 " + p.gear_count + " 件 · " + p.alert_count + " 项提醒</div>" +
+      '<span class="go">查看对账报告 →</span></div>';
+  }).join("");
+}
+
+function openProducedPlan(planId) {
+  var info = state.producedPlans.find(function (p) { return p.plan_id === planId; });
+  if (!info) return;
+  state.plan = info.report.plan;
+  state.report = info.report;
+  var route = state.routes.find(function (x) { return x.id === info.report.plan.route_id; });
+  if (route) state.route = route;
+  renderReport(info.report);
+  showView("report");
+  toast("已加载对话产出的计划，可点'重查天气对账'刷新");
+}
+
+// ── 视图 5：实时监测 Dashboard（阶段二）─────────────────────
+
+var _liveChart = null;
+var _liveData = null;          // {series:[...], hours}
+var _liveCurrentWp = 0;
+var _liveInterval = null;      // 轮询时间显示
+
+function openLiveMonitor() {
+  if (!state.plan) { toast("先创建或打开一个计划"); return; }
+  if (state.meta.weather_source === "demo") {
+    toast("实时监测需配置 TJ_API_KEY（真实天机气象数据）");
+    return;
+  }
+  showView("live");
+  var route = state.routes.find(function (x) { return x.id === state.plan.route_id; }) || state.route || {};
+  $("liveTitle").textContent = "实时监测 · " + (route.name || "计划");
+  $("liveMeta").textContent = "出发 " + state.plan.depart_date + " · " +
+    ((route.waypoints || []).length) + " 个监测点";
+  // 先停止旧连接
+  stopLiveStream();
+  loadLiveHourly();
+}
+
+function loadLiveHourly() {
+  $("liveAlertList").innerHTML = '<div class="no-alerts">正在拉取沿线小时预报…</div>';
+  api("/api/plans/" + state.plan.id + "/live/hourly?hours=48").then(function (data) {
+    _liveData = data;
+    _liveCurrentWp = 0;
+    renderLiveTabs();
+    renderLiveChart();
+  }).catch(function (e) {
+    $("liveAlertList").innerHTML = '<div class="no-alerts" style="color:var(--danger)">加载失败：' + esc(e.message) + "</div>";
+  });
+}
+
+function renderLiveTabs() {
+  var series = (_liveData && _liveData.series) || [];
+  $("liveWpTabs").innerHTML = series.map(function (s, i) {
+    return '<span class="live-wp-tab' + (i === _liveCurrentWp ? " active" : "") +
+      '" onclick="switchLiveWp(' + i + ')">D' + s.day + " · " + esc(s.waypoint_name) +
+      " (" + s.elevation + "m)</span>";
+  }).join("");
+}
+
+function switchLiveWp(i) {
+  _liveCurrentWp = i;
+  renderLiveTabs();
+  renderLiveChart();
+}
+
+function renderLiveChart() {
+  if (!_liveData || !_liveData.series.length) return;
+  var s = _liveData.series[_liveCurrentWp] || _liveData.series[0];
+  var hours = s.hours || [];
+  var labels = hours.map(function (h) { return h.datetime.slice(11, 16); });
+  var datasets = [
+    { label: "气温 °C", data: hours.map(function (h) { return h.t2m; }),
+      borderColor: "#ff7a45", backgroundColor: "rgba(255,122,69,.1)",
+      yAxisID: "y", tension: 0.3, pointRadius: 0, borderWidth: 2, fill: true },
+    { label: "降水 mm", data: hours.map(function (h) { return h.tp_mm; }),
+      borderColor: "#4a90e2", backgroundColor: "rgba(74,144,226,.3)",
+      yAxisID: "y1", type: "bar", order: 2 },
+    { label: "风速 m/s", data: hours.map(function (h) { return h.ws10m; }),
+      borderColor: "#3ecf8e", backgroundColor: "transparent",
+      yAxisID: "y", tension: 0.3, pointRadius: 0, borderWidth: 1.5,
+      borderDash: [4, 4] },
+  ];
+  if (_liveChart) _liveChart.destroy();
+  var ctx = $("liveChart").getContext("2d");
+  _liveChart = new Chart(ctx, {
+    type: "line",
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { labels: { color: "#8b98b8", font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { title: function (its) {
+          return s.waypoint_name + " · " + hours[its[0].dataIndex].datetime.slice(5, 16);
+        } } },
+      },
+      scales: {
+        x: { ticks: { color: "#8b98b8", maxTicksLimit: 12, font: { size: 10 } },
+          grid: { color: "rgba(43,58,92,.4)" } },
+        y: { position: "left", ticks: { color: "#ff7a45", font: { size: 10 } },
+          grid: { color: "rgba(43,58,92,.4)" }, title: { display: true, text: "°C / m/s", color: "#8b98b8" } },
+        y1: { position: "right", ticks: { color: "#4a90e2", font: { size: 10 } },
+          grid: { drawOnChartArea: false }, title: { display: true, text: "mm", color: "#8b98b8" } },
+      },
+    },
+  });
+}
+
+function toggleLiveStream() {
+  if (state.liveStream) stopLiveStream();
+  else startLiveStream();
+}
+
+function startLiveStream() {
+  if (!state.plan) return;
+  postJSON("/api/plans/" + state.plan.id + "/live/start", {}).catch(function () {});
+  // EventSource 用 GET，恰好匹配 /live/stream
+  var es = new EventSource(API + "/api/plans/" + state.plan.id + "/live/stream?interval=60");
+  state.liveStream = es;
+  $("liveToggleBtn").textContent = "⏸ 停止监测";
+  $("liveDot").classList.add("live-on");
+  $("liveStatusText").textContent = "监测中 · 每 60s 重查";
+  var firstTick = true;
+  es.addEventListener("tick", function (ev) {
+    var data = JSON.parse(ev.data);
+    _renderLiveAlerts(data.alerts || [], firstTick);
+    firstTick = false;
+  });
+  es.addEventListener("error", function (ev) {
+    // SSE 原生 error 事件无 data；服务端错误会通过 event:error 推送
+  });
+  es.addEventListener("error-msg", function () {});
+  // 服务端 event:error 浏览器会归到 onerror，data 丢失；改用通用 message 兜底解析
+  es.onmessage = function (ev) {
+    try {
+      var d = JSON.parse(ev.data);
+      if (d.message) {
+        $("liveStatusText").textContent = "查询出错：" + d.message.slice(0, 30);
+      }
+    } catch (e) {}
+  };
+}
+
+function stopLiveStream() {
+  if (state.liveStream) {
+    state.liveStream.close();
+    state.liveStream = null;
+    if (state.plan) {
+      postJSON("/api/plans/" + state.plan.id + "/live/stop", {}).catch(function () {});
+    }
+  }
+  var btn = $("liveToggleBtn"); if (btn) btn.textContent = "▶ 开始监测";
+  var dot = $("liveDot"); if (dot) dot.classList.remove("live-on");
+  var st = $("liveStatusText"); if (st) st.textContent = "未开始";
+}
+
+function _renderLiveAlerts(alerts, isFirst) {
+  var box = $("liveAlertList");
+  if (isFirst && !alerts.length) {
+    box.innerHTML = '<div class="no-alerts">✅ 暂无突变，持续监测中…</div>';
+    return;
+  }
+  if (!alerts.length) return;   // 后续空轮不覆盖已有告警
+  // 新告警插到最前
+  var html = alerts.map(function (a) {
+    return '<div class="live-alert-item ' + esc(a.severity) + '">' +
+      '<div class="at">' + (SEV_ICON[a.severity] || "") + " " + esc(a.datetime || "") + " · " + esc(a.waypoint_name || "") + "</div>" +
+      '<div class="at-t">' + esc(a.title) + "</div>" +
+      '<div class="at-d">' + esc(a.detail) + (a.suggestion ? " 建议：" + esc(a.suggestion) : "") + "</div>" +
+      "</div>";
+  }).join("");
+  // 保留最多 20 条
+  var existing = box.querySelectorAll(".live-alert-item");
+  if (existing.length > 20 - alerts.length) {
+    for (var i = existing.length - 1; i >= 20 - alerts.length; i--) existing[i].remove();
+  }
+  var noAlert = box.querySelector(".no-alerts");
+  if (noAlert) noAlert.remove();
+  box.insertAdjacentHTML("afterbegin", html);
+}
 
 init();

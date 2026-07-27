@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -20,11 +21,48 @@
   </div>
   <div class="topbar-right">
     <span id="sourceBadge" class="badge">…</span>
+    <button class="ghost-btn" onclick="showView('chat')">💬 AI 对话</button>
+    <button class="ghost-btn" onclick="showView('routes')">🗺 线路库</button>
     <button class="ghost-btn" onclick="showMyPlans()">我的计划</button>
   </div>
 </header>
 
 <main>
+
+<!-- 视图 0：AI 对话（主入口）-->
+<section id="view-chat" class="view">
+  <div class="chat-layout">
+    <div class="chat-main">
+      <div class="chat-header">
+        <h3>💬 出行规划助手</h3>
+        <span id="chatBadge" class="badge">…</span>
+      </div>
+      <div id="chatMessages" class="chat-messages">
+        <div id="chatWelcome" class="chat-welcome">
+          <div class="ic">🏔️</div>
+          <h3>告诉我你想去哪</h3>
+          <p>像和懂户外的朋友聊天一样，我会帮你选线路、理装备、查天气。</p>
+          <div class="qs">
+            <button class="qchip" onclick="quickAsk('想去云南徒步，4天左右，有什么推荐？')">想去云南徒步，4天左右</button>
+            <button class="qchip" onclick="quickAsk('下周末武功山天气怎么样？需要带什么装备？')">下周末武功山天气和装备</button>
+            <button class="qchip" onclick="quickAsk('我是越野跑新手，有适合入门的比赛线路吗？')">越野跑新手入门线路</button>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input">
+        <textarea id="chatInput" rows="1" placeholder="说说你的出行想法…（Enter 发送，Shift+Enter 换行）"
+          oninput="autoGrow(this)" onkeydown="onChatKey(event)"></textarea>
+        <button id="sendBtn" onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+    <aside class="chat-aside">
+      <h4>本次对话产出</h4>
+      <div id="chatAsideBody">
+        <p class="chat-empty-aside">通过对话创建的计划会显示在这里，方便随时查看天气对账报告。</p>
+      </div>
+    </aside>
+  </div>
+</section>
 
 <!-- 视图 1：线路选择 -->
 <section id="view-routes" class="view">
@@ -88,6 +126,7 @@
         <div id="wxMatrix" class="wx-matrix"></div>
       </div>
       <button class="ghost-btn full" onclick="showPush()">📲 预览提醒推送（V2 演示）</button>
+      <button class="ghost-btn full" onclick="openLiveMonitor()">📡 进入实时监测</button>
     </div>
   </div>
 </section>
@@ -106,6 +145,35 @@
       <p>当前版本采用<strong>打开即对账</strong>：每次进入计划，系统重查沿线天气并与上次快照对比，变化置顶展示。</p>
       <p>所有提醒都产自统一的<strong>提醒事件层</strong>（AlertEvent）。左侧手机所示即真实事件数据渲染的推送形态——V2 只需为事件流接入邮件/消息通道，无需改动检测引擎。</p>
       <p class="muted">产品化路线图：邮件通道 → 微信服务号 → App 推送</p>
+    </div>
+  </div>
+</section>
+
+<!-- 视图 5：实时监测 Dashboard -->
+<section id="view-live" class="view hidden">
+  <button class="back-btn" onclick="showView('report')">← 返回报告</button>
+  <div class="report-head">
+    <div>
+      <h2 id="liveTitle">实时天气监测</h2>
+      <p id="liveMeta" class="muted"></p>
+    </div>
+    <div class="report-actions">
+      <button class="ghost-btn" id="liveToggleBtn" onclick="toggleLiveStream()">▶ 开始监测</button>
+    </div>
+  </div>
+  <div class="live-layout">
+    <div class="live-charts card">
+      <h3 class="card-title">未来 <span id="liveHours">48</span> 小时天气走势（15min 精度）</h3>
+      <div class="live-wp-tabs" id="liveWpTabs"></div>
+      <div class="live-chart-box"><canvas id="liveChart"></canvas></div>
+      <p class="hint" style="margin-top:10px">点击上方点位标签切换；监测开启后系统每 60 秒重查，检测到近 3h 突变会推送提醒。</p>
+    </div>
+    <div class="live-alerts card">
+      <h3 class="card-title">实时告警流</h3>
+      <div id="liveAlertList" class="live-alert-list">
+        <div class="no-alerts">点击"开始监测"，系统将持续追踪沿线天气变化。</div>
+      </div>
+      <div class="live-status"><span id="liveDot" class="live-dot"></span><span id="liveStatusText">未开始</span></div>
     </div>
   </div>
 </section>

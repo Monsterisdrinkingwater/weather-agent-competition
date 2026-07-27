@@ -12,7 +12,7 @@ from typing import List
 import httpx
 
 from config import TJ_API_KEY, TJ_API_BASE, WEATHER_DEMO_MODE
-from models import Route, DayPointWeather
+from models import Route, DayPointWeather, HourWeather, Waypoint
 
 _WIND_DIRS = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
 
@@ -144,16 +144,56 @@ class TianjiSource:
             slp_trend=trend,
         )
 
+    @staticmethod
+    def _extract_series(resp: dict) -> List[dict]:
+        """从天机 /beta 响应里取出逐时序列。
+
+        文档结构：{code, message, data: {units, data: [{time, t2m, ...}], time_init}}
+        兼容旧字段 hourly / data 两种放法。
+        """
+        body = resp.get("data", resp)
+        series = body.get("data") or body.get("hourly") or []
+        return series if isinstance(series, list) else []
+
     def fetch(self, route: Route, depart: date, scenario: str = "normal") -> List[DayPointWeather]:
         cells = []
+        # fcst_days 至少覆盖到行程最后一天（文档：tot_hrs = fcst_days*24 + fcst_hours）
+        horizon_days = max(route.days, 1)
         for wp in route.waypoints:
             day_offset = wp.day - 1
             d = (depart + timedelta(days=day_offset)).isoformat()
-            data = self._request(wp.lat, wp.lon, fcst_days=0, fcst_hours=0)
-            hourly = data.get("data", data.get("hourly", []))
+            resp = self._request(wp.lat, wp.lon, fcst_days=horizon_days)
+            series = self._extract_series(resp)
+            # 按目标日期过滤当天的逐时记录再聚合（响应是连续多日序列）
+            day_series = [h for h in series if str(h.get("time", "")).startswith(d)]
+            hourly = day_series or series
             if hourly:
                 cells.append(self._aggregate_day(hourly, wp.id, d))
         return cells
+
+    def fetch_hourly(self, wp: Waypoint, hours: int = 72) -> List[HourWeather]:
+        """单点逐时预报（15min 粒度，最多 hours 小时）——实时监测用，不聚合。
+
+        复用 _request 已传的 t_res=15min，直接消费原始序列。
+        """
+        resp = self._request(wp.lat, wp.lon, fcst_hours=hours)
+        series = self._extract_series(resp)
+        out: List[HourWeather] = []
+        for h in series:
+            try:
+                out.append(HourWeather(
+                    waypoint_id=wp.id,
+                    datetime=str(h.get("time", "")),
+                    t2m=round(float(h.get("t2m", 0)), 1),
+                    ws10m=round(float(h.get("ws10m", 0)), 1),
+                    wd10m=str(h.get("wd10m", "")),
+                    rh2m=round(float(h.get("rh2m", 0)), 0),
+                    tp_mm=round(float(h.get("tp", 0)), 1),
+                    slp=round(float(h.get("slp", 0)), 1),
+                ))
+            except (TypeError, ValueError):
+                continue
+        return out
 
 
 def get_source():

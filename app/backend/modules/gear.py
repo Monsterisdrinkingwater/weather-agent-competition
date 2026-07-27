@@ -8,7 +8,7 @@
 import json
 import logging
 import re
-from typing import List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 import httpx
 
@@ -109,6 +109,78 @@ def _llm_chat(system: str, user: str) -> str:
     except Exception as e:
         logger.warning("LLM 调用失败，降级为内置知识库: %s: %s", type(e).__name__, str(e)[:200])
         return ""
+
+
+def require_llm() -> None:
+    """对话/工具调用等强依赖 LLM 的入口检查。无 Key 直接抛错，不静默降级。"""
+    if not MODELSCOPE_API_KEY:
+        raise RuntimeError("未配置 MODELSCOPE_API_KEY，对话功能不可用")
+
+
+def _build_payload(messages: List[Dict[str, Any]],
+                   tools: Optional[List[Dict[str, Any]]] = None,
+                   temperature: float = 0.3) -> Dict[str, Any]:
+    """构造 OpenAI 兼容请求体（messages 已是完整对话历史，含 system/user/assistant/tool）。"""
+    payload: Dict[str, Any] = {
+        "model": LLM_MODEL, "temperature": temperature, "messages": messages,
+    }
+    if tools:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
+    return payload
+
+
+def llm_chat_with_tools(messages: List[Dict[str, Any]],
+                        tools: Optional[List[Dict[str, Any]]] = None,
+                        temperature: float = 0.3) -> Dict[str, Any]:
+    """非流式 + function calling：返回完整 message（含 content 或 tool_calls）。
+
+    用于对话 Agent 的工具决策阶段——魔搭 OpenAI 兼容接口在 stream+tools 组合下
+    解析 tool_calls 易出错，故工具决策一律走非流式。
+    """
+    require_llm()
+    resp = httpx.post(
+        MODELSCOPE_BASE_URL + "/chat/completions",
+        headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
+        json=_build_payload(messages, tools, temperature),
+        timeout=60,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]
+
+
+def llm_chat_stream(messages: List[Dict[str, Any]],
+                    temperature: float = 0.5) -> Iterator[str]:
+    """纯文本流式生成（不带 tools）：逐 token yield 文本片段。
+
+    用于把对话 Agent 的最终回复推给前端打字机渲染。
+    OpenAI 兼容 SSE：data: {chunk}\\n\\n，末尾 data: [DONE]。
+    """
+    require_llm()
+    payload = _build_payload(messages, tools=None, temperature=temperature)
+    payload["stream"] = True
+    with httpx.stream(
+        "POST", MODELSCOPE_BASE_URL + "/chat/completions",
+        headers={"Authorization": "Bearer " + MODELSCOPE_API_KEY},
+        json=payload, timeout=120,
+    ) as resp:
+        resp.raise_for_status()
+        for line in resp.iter_lines():
+            if not line or not line.startswith("data:"):
+                continue
+            data = line[len("data:"):].strip()
+            if data == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            delta = choices[0].get("delta", {}).get("content")
+            if delta:
+                yield delta
 
 
 _PARSE_SYSTEM = """你是户外装备专家。把用户的装备清单解析为 JSON 数组，每项：
